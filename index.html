@@ -1,0 +1,2053 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Acervo</title>
+<meta name="description" content="Tracker pessoal de digitalizações de LPs, CDs, DVDs e fitas, com busca no Discogs.">
+<meta name="theme-color" content="#1C2A35" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141C23" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Acervo">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face {
+  font-family: "Archivo"; src: url("fonts/archivo-latin.woff2") format("woff2");
+  font-weight: 100 900; font-stretch: 62% 125%; font-style: normal; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Archivo"; src: url("fonts/archivo-latin-ext.woff2") format("woff2");
+  font-weight: 100 900; font-stretch: 62% 125%; font-style: normal; font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Courier Prime"; src: url("fonts/courier-prime-400.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Courier Prime"; src: url("fonts/courier-prime-ext-400.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+20A0-20AB, U+20AD-20C0, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Courier Prime"; src: url("fonts/courier-prime-700.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+2000-206F, U+20AC, U+2122, U+FEFF, U+FFFD;
+}
+
+:root {
+  /* Layout: uma coluna tipo livro de tombo. Cabeçalho escuro como a etiqueta de uma caixa de arquivo,
+     a lista de digitalizações abaixo e folhas que sobem para busca, edição e ajustes. */
+  --ground: #EDF0F2;
+  --surface: #FFFFFF;
+  --surface-2: #F4F6F8;
+  --ink: #141B20;
+  --ink-2: #3F4C56;
+  --ink-3: #5E6B75;
+  --rule: #D4DBE0;
+  --accent: #245A86;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #D9E6F1;
+  --label: #1C2A35;
+  --label-ink: #F1F4F6;
+  --label-ink-2: #9DB0BE;
+  --label-hover: rgb(255 255 255 / .1);
+  --redline: #D2433A;
+  --st-fila: #56636E;       --st-fila-bg: #E1E6EA;
+  --st-andamento: #8A5600;  --st-andamento-bg: #F6E5C3;
+  --st-concluido: #1D6B43;  --st-concluido-bg: #D3EBDC;
+  --st-refazer: #A3294A;    --st-refazer-bg: #F4D9E0;
+  --ph-s: 24%; --ph-l: 84%; --ph-ink-l: 30%;
+  --shadow-1: 0 1px 2px rgb(20 27 32 / .08);
+  --shadow-2: 0 12px 32px rgb(20 27 32 / .18);
+  --backdrop: rgb(14 20 25 / .5);
+  --font-display: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-ui: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Courier Prime", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --gl: max(16px, env(safe-area-inset-left, 0px));
+  --gr: max(16px, env(safe-area-inset-right, 0px));
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #0E1317;
+    --surface: #161D23;
+    --surface-2: #1B242B;
+    --ink: #E2E8EB;
+    --ink-2: #A8B4BD;
+    --ink-3: #7C8A94;
+    --rule: #28323B;
+    --accent: #8DB8DD;
+    --accent-ink: #0E1317;
+    --accent-soft: #1C3246;
+    --label: #141C23;
+    --label-ink: #EEF2F4;
+    --label-ink-2: #8B9BA8;
+    --label-hover: rgb(255 255 255 / .08);
+    --redline: #E3584E;
+    --st-fila: #A4B0BA;       --st-fila-bg: #232C34;
+    --st-andamento: #E9B964;  --st-andamento-bg: #382A10;
+    --st-concluido: #70CC99;  --st-concluido-bg: #132E21;
+    --st-refazer: #F18BA2;    --st-refazer-bg: #3B1924;
+    --ph-s: 16%; --ph-l: 24%; --ph-ink-l: 78%;
+    --shadow-1: 0 1px 2px rgb(0 0 0 / .45);
+    --shadow-2: 0 14px 36px rgb(0 0 0 / .55);
+    --backdrop: rgb(0 0 0 / .62);
+    color-scheme: dark;
+  }
+}
+.st-fila { --sc: var(--st-fila); --sb: var(--st-fila-bg); }
+.st-andamento { --sc: var(--st-andamento); --sb: var(--st-andamento-bg); }
+.st-concluido { --sc: var(--st-concluido); --sb: var(--st-concluido-bg); }
+.st-refazer { --sc: var(--st-refazer); --sb: var(--st-refazer-bg); }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0; min-height: 100vh;
+  background: var(--ground); color: var(--ink);
+  font: 400 15px/1.45 var(--font-ui); font-stretch: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+body.locked { overflow: hidden; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+[hidden] { display: none !important; }
+img { max-width: 100%; display: block; }
+a { color: var(--accent); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+p { margin: 0; }
+svg { flex: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { max-width: 980px; margin-inline: auto; }
+.gutter { padding-left: var(--gl); padding-right: var(--gr); }
+.mono { font-family: var(--font-mono); }
+
+/* Cabeçalho: etiqueta da caixa, com a linha vermelha da ficha catalográfica */
+.top {
+  position: sticky; top: 0; z-index: 30;
+  background: var(--label); color: var(--label-ink);
+  padding-top: env(safe-area-inset-top, 0px);
+  border-bottom: 3px solid var(--redline);
+}
+.top-row { display: flex; align-items: center; gap: 12px; padding-block: 12px; }
+.brand { flex: 1; min-width: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; }
+.wordmark {
+  margin: 0; font-family: var(--font-display); font-weight: 850; font-stretch: 125%;
+  font-size: 1.45rem; line-height: 1; letter-spacing: .07em; text-transform: uppercase;
+}
+.brand-sub {
+  font-family: var(--font-mono); font-size: .8rem; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--label-ink-2); white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 10px; border: 0; padding: 0;
+  background: transparent; color: inherit; display: inline-grid; place-items: center; flex: none;
+}
+.top .icon-btn:hover { background: var(--label-hover); }
+.icon-btn.bordered { border: 1px solid var(--rule); background: var(--surface); height: 44px; width: 44px; }
+
+/* Resumo por status */
+.summary { padding-block: 16px 4px; }
+.bar { display: flex; gap: 2px; height: 8px; border-radius: 4px; overflow: hidden; background: var(--rule); }
+.bar span { flex: 1 1 0; min-width: 3px; background: var(--sc); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0 0 -8px; }
+.legend button {
+  display: inline-flex; align-items: baseline; gap: 6px; min-height: 34px;
+  border: 1px solid transparent; border-radius: 999px; background: transparent;
+  padding: 4px 11px 4px 9px; color: var(--ink-2); font-size: .88rem;
+}
+.legend button:hover { background: var(--surface); }
+.legend button[aria-pressed="true"] { background: var(--surface); border-color: var(--sc); color: var(--ink); }
+.legend .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sc); align-self: center; }
+.legend .n {
+  font-family: var(--font-display); font-weight: 760; font-stretch: 112%;
+  font-size: 1.02rem; color: var(--ink); font-variant-numeric: tabular-nums;
+}
+
+/* Controles */
+.controls { display: grid; gap: 10px; padding-block: 10px 6px; }
+.searchbox { position: relative; display: block; }
+.searchbox svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-3); pointer-events: none; }
+.searchbox input { padding-left: 40px; }
+.inp {
+  width: 100%; min-height: 44px; border-radius: 9px; border: 1px solid var(--rule);
+  background: var(--surface); padding: 10px 12px; font-size: 16px; line-height: 1.3;
+  -webkit-appearance: none; appearance: none;
+}
+.inp::placeholder { color: var(--ink-3); opacity: .85; }
+.inp:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+textarea.inp { min-height: 92px; resize: vertical; }
+input[type="date"].inp { min-width: 0; }
+.selwrap { position: relative; display: block; min-width: 0; }
+.selwrap select { padding-right: 34px; cursor: pointer; }
+.selwrap svg { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ink-3); }
+.chiprow {
+  display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+  margin-inline: calc(-1 * var(--gl)) calc(-1 * var(--gr));
+  padding: 2px var(--gr) 2px var(--gl);
+}
+.chiprow::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
+  border-radius: 999px; border: 1px solid var(--rule); background: var(--surface);
+  color: var(--ink-2); font-size: .88rem; font-weight: 520; white-space: nowrap; user-select: none;
+}
+.chip .c { font-family: var(--font-mono); font-size: .8rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--ground); }
+.chip[aria-pressed="true"] .c { color: inherit; opacity: .75; }
+.tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sort { display: inline-flex; align-items: center; gap: 8px; font-size: .86rem; color: var(--ink-2); min-width: 0; }
+.sort .inp { min-height: 36px; padding-block: 6px; width: auto; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; background: var(--surface); flex: none; }
+.seg button { width: 42px; height: 34px; border: 0; background: transparent; color: var(--ink-3); display: grid; place-items: center; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--ground); }
+
+/* Lista */
+.listwrap { padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
+#items.rows { display: flex; flex-direction: column; }
+.row {
+  display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 14px; align-items: start;
+  width: 100%; padding: 12px 0; border: 0; border-bottom: 1px solid var(--rule);
+  background: transparent; text-align: left; color: inherit;
+  content-visibility: auto; contain-intrinsic-size: auto 89px;
+}
+.row:hover .row-title { color: var(--accent); }
+.row-main { min-width: 0; display: grid; gap: 2px; }
+.row-title { font-weight: 650; font-size: 1rem; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-sub { color: var(--ink-2); font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-sub .mono { font-size: .84rem; color: var(--ink-3); }
+.row-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.mtag {
+  display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px;
+  font-family: var(--font-mono); font-size: .76rem; text-transform: uppercase; letter-spacing: .03em;
+  border: 1px solid var(--rule); border-radius: 4px; color: var(--ink-2); background: var(--surface); white-space: nowrap;
+}
+.pill {
+  display: inline-flex; align-items: center; gap: 5px; padding: 1px 9px 1px 7px; border-radius: 999px;
+  font-size: .78rem; font-weight: 620; background: var(--sb); color: var(--sc); white-space: nowrap;
+}
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.date { font-family: var(--font-mono); font-size: .8rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+#items.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 18px 12px; padding-top: 10px; }
+@media (min-width: 720px) { #items.grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 22px 16px; } }
+.card { display: grid; align-content: start; gap: 6px; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; min-width: 0; }
+.card .cover { box-shadow: var(--shadow-1); }
+.card:hover .card-title { color: var(--accent); }
+.card-title { font-size: .86rem; font-weight: 650; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.card-artist { font-size: .8rem; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cover .over { position: absolute; left: 5px; bottom: 5px; font-size: .68rem; padding: 0 5px; }
+.sdot { position: absolute; top: 6px; right: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--sc); box-shadow: 0 0 0 2px var(--surface); }
+
+/* Capas */
+.cover {
+  position: relative; display: block; width: 100%; max-width: 100%; aspect-ratio: 1;
+  border-radius: 4px; overflow: hidden; background: var(--surface-2); container-type: inline-size;
+}
+.cover img { width: 100%; height: 100%; object-fit: cover; }
+.ph {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: hsl(var(--h, 210) var(--ph-s) var(--ph-l)); color: hsl(var(--h, 210) 32% var(--ph-ink-l));
+}
+.ph b { font-family: var(--font-display); font-stretch: 125%; font-weight: 820; font-size: 1rem; font-size: 28cqw; letter-spacing: .02em; line-height: 1; }
+.ph svg { position: absolute; right: 7%; bottom: 7%; width: 26%; height: 26%; opacity: .5; }
+
+/* Estado vazio e avisos */
+.empty { display: grid; gap: 16px; max-width: 560px; padding-block: 28px 8px; }
+.empty h2 { margin: 0; font-family: var(--font-display); font-stretch: 112%; font-weight: 780; font-size: 1.45rem; line-height: 1.15; text-wrap: balance; }
+.empty > p { color: var(--ink-2); max-width: 52ch; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; counter-reset: passo; }
+.steps li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; align-items: start; color: var(--ink-2); }
+.steps li strong { color: var(--ink); }
+.steps li::before {
+  counter-increment: passo; content: counter(passo);
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  font-family: var(--font-mono); font-weight: 700; color: var(--ink); background: var(--surface); border: 1px solid var(--rule);
+}
+.steps li.done::before { content: "✓"; background: var(--st-concluido-bg); color: var(--st-concluido); border-color: transparent; }
+.noresults { padding-block: 28px; display: grid; gap: 10px; justify-items: start; color: var(--ink-2); }
+.note {
+  display: grid; gap: 8px; padding: 14px; border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--rule); color: var(--ink-2); font-size: .92rem;
+}
+.note strong { color: var(--ink); }
+.note.warn { background: var(--st-andamento-bg); border-color: transparent; color: var(--st-andamento); }
+.note.warn strong { color: inherit; }
+.nudge { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.nudge p { flex: 1 1 220px; }
+.fine { font-size: .84rem; color: var(--ink-3); }
+.hint { font-size: .88rem; color: var(--ink-2); }
+.msg { font-size: .9rem; color: var(--ink-2); }
+.err { font-size: .86rem; color: var(--st-refazer); font-weight: 600; }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; font-weight: 600; }
+
+/* Botões */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px;
+  border-radius: 10px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink);
+  font-weight: 620; font-size: .95rem; text-decoration: none; white-space: nowrap;
+}
+.btn:hover { border-color: var(--ink-3); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover { border-color: var(--accent); filter: brightness(1.06); }
+.btn-danger { color: var(--st-refazer); }
+.btn-block { width: 100%; }
+.btn:disabled { opacity: .55; cursor: default; filter: none; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
+.fab {
+  position: fixed; z-index: 25;
+  right: var(--gr); bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  display: inline-flex; align-items: center; gap: 8px; height: 54px; padding: 0 22px 0 18px;
+  border: 0; border-radius: 27px; background: var(--accent); color: var(--accent-ink);
+  font-weight: 680; font-size: 1rem; box-shadow: var(--shadow-2);
+}
+
+/* Folha (busca, edição, ajustes) */
+.backdrop {
+  position: fixed; inset: 0; z-index: 50; background: var(--backdrop);
+  display: flex; align-items: flex-end; justify-content: center; animation: fade .18s ease-out;
+}
+.sheet {
+  width: 100%; max-width: 680px;
+  height: calc(100vh - env(safe-area-inset-top, 0px) - 10px);
+  height: calc(100dvh - env(safe-area-inset-top, 0px) - 10px);
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--ground); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-2);
+  animation: rise .24s cubic-bezier(.2, .8, .2, 1);
+}
+.sheet:focus { outline: none; }
+.sheet-head {
+  display: flex; align-items: center; gap: 4px; min-height: 58px;
+  padding: 8px calc(var(--gr) - 8px) 8px calc(var(--gl) - 8px);
+  background: var(--surface); border-bottom: 1px solid var(--rule);
+}
+.sheet-head h2 {
+  flex: 1; min-width: 0; margin: 0 0 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--font-display); font-stretch: 110%; font-weight: 760; font-size: 1.1rem;
+}
+.sheet-body {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  display: grid; align-content: start; gap: 20px;
+  padding: 18px var(--gr) 28px var(--gl);
+}
+.sheet-foot {
+  display: flex; gap: 10px; padding: 12px var(--gr) calc(12px + env(safe-area-inset-bottom, 0px)) var(--gl);
+  background: var(--surface); border-top: 1px solid var(--rule);
+}
+.sheet-foot:empty { display: none; }
+@media (min-width: 720px) {
+  .backdrop { align-items: center; padding: 24px; }
+  .sheet { height: auto; max-height: min(900px, calc(100vh - 48px)); border-radius: 18px; }
+  .sheet-foot { padding-bottom: 12px; }
+}
+@keyframes rise { from { transform: translateY(28px); opacity: .5; } to { transform: none; opacity: 1; } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Formulários */
+.field { display: grid; gap: 7px; min-width: 0; }
+.lbl {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: .74rem; font-weight: 680; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-2);
+}
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.inline-form { display: flex; gap: 8px; align-items: stretch; }
+.inline-form > .inp { flex: 1; min-width: 0; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice { position: relative; display: inline-flex; }
+.choice input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.choice span {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 0 14px;
+  border-radius: 999px; border: 1px solid var(--rule); background: var(--surface);
+  color: var(--ink-2); font-weight: 560; font-size: .93rem; user-select: none;
+}
+.choice input:checked + span { background: var(--ink); border-color: var(--ink); color: var(--ground); }
+.choice input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.choice.status span::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--sc); }
+.choice.status input:checked + span { background: var(--sb); border-color: var(--sc); color: var(--sc); box-shadow: inset 0 0 0 1px var(--sc); }
+.sugs { display: flex; flex-wrap: wrap; gap: 6px; }
+.sug {
+  border: 1px dashed var(--rule); background: transparent; border-radius: 999px; padding: 5px 11px;
+  font-family: var(--font-mono); font-size: .82rem; color: var(--ink-2); max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sug:hover { border-style: solid; color: var(--ink); }
+
+.album {
+  display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 14px; align-items: start;
+  padding: 14px; background: var(--surface); border: 1px solid var(--rule); border-radius: 14px;
+}
+.album-info { display: grid; gap: 3px; min-width: 0; }
+.album-t { font-family: var(--font-display); font-weight: 760; font-stretch: 104%; font-size: 1.14rem; line-height: 1.2; overflow-wrap: anywhere; text-wrap: balance; }
+.album-a { color: var(--ink-2); overflow-wrap: anywhere; }
+.album-m { font-family: var(--font-mono); font-size: .84rem; color: var(--ink-3); overflow-wrap: anywhere; }
+.album-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: .9rem; font-weight: 600; width: fit-content; }
+.edition {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  border: 1px dashed var(--rule); border-radius: 12px;
+}
+.edition-text { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.edition-val { font-family: var(--font-mono); font-size: .88rem; overflow-wrap: anywhere; }
+.edition-none { font-size: .9rem; color: var(--ink-2); }
+.owned-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+details.albumdata { border-top: 1px solid var(--rule); padding-top: 14px; }
+details.albumdata > summary {
+  cursor: pointer; font-weight: 650; color: var(--ink-2); list-style: none; display: flex; align-items: center; gap: 6px;
+}
+details.albumdata > summary::-webkit-details-marker { display: none; }
+details.albumdata > summary svg { transition: transform .15s; transform: rotate(-90deg); }
+details.albumdata[open] > summary svg { transform: none; }
+.albumdata-body { display: grid; gap: 14px; margin-top: 14px; }
+.albumdata.first { border-top: 0; padding-top: 0; }
+.danger { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--rule); padding-top: 18px; }
+
+/* Busca */
+.searchform { display: flex; gap: 8px; }
+.searchform .searchbox { flex: 1; min-width: 0; }
+.segtext { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border-radius: 11px; background: var(--surface-2); border: 1px solid var(--rule); }
+.segtext button { height: 38px; border: 0; border-radius: 8px; background: transparent; color: var(--ink-2); font-weight: 620; }
+.segtext button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
+.status-line { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: .88rem; color: var(--ink-2); min-height: 22px; }
+.status-line.error { color: var(--st-refazer); font-weight: 560; }
+.results { display: flex; flex-direction: column; margin-top: -8px; }
+.res {
+  display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; align-items: center;
+  width: 100%; padding: 11px 0; border: 0; border-bottom: 1px solid var(--rule);
+  background: transparent; color: inherit; text-align: left;
+}
+.res:hover .res-t { color: var(--accent); }
+.res-main { min-width: 0; display: grid; gap: 1px; }
+.res-t { font-weight: 640; line-height: 1.28; overflow-wrap: anywhere; }
+.res-a { font-size: .9rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.res-m { font-family: var(--font-mono); font-size: .8rem; color: var(--ink-3); overflow-wrap: anywhere; }
+.res-go { color: var(--ink-3); }
+.owned {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 4px; white-space: nowrap;
+  font-family: var(--font-mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .03em;
+  color: var(--st-concluido); background: var(--st-concluido-bg);
+}
+.owned.soft { color: var(--ink-2); background: transparent; border: 1px dashed var(--rule); }
+.spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--rule); border-top-color: var(--accent); animation: spin .8s linear infinite; flex: none; }
+.mini-steps { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+.tokencard .inline-form { margin-top: 2px; }
+.credit { font-size: .82rem; color: var(--ink-3); }
+
+/* Ajustes */
+.sect { display: grid; gap: 12px; padding-top: 18px; border-top: 1px solid var(--rule); }
+.sect:first-child { border-top: 0; padding-top: 0; }
+.sect h3 {
+  margin: 0; display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-display); font-stretch: 110%; font-weight: 760; font-size: 1.02rem;
+}
+.sect p { color: var(--ink-2); font-size: .93rem; max-width: 60ch; }
+.stack { display: grid; gap: 12px; }
+
+.toast {
+  position: fixed; z-index: 80; left: 50%; transform: translateX(-50%);
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  width: max-content; max-width: min(calc(100vw - 32px), 480px);
+  display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; border-radius: 12px;
+  background: var(--ink); color: var(--ground); box-shadow: var(--shadow-2); font-size: .93rem;
+  animation: fade .18s ease-out;
+}
+.toast span { min-width: 0; }
+.toast button { border: 0; background: transparent; color: inherit; font-weight: 700; text-decoration: underline; padding: 6px 8px; flex: none; }
+
+@media (max-width: 370px) {
+  .two { grid-template-columns: 1fr; }
+  .album { grid-template-columns: 84px minmax(0, 1fr); }
+  .fab { padding: 0 18px 0 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
+  .spinner { animation: spin 1.6s linear infinite !important; }
+}
+</style>
+</head>
+<body>
+<noscript><p style="padding:16px">O Acervo precisa de JavaScript ligado para funcionar.</p></noscript>
+
+<header class="top">
+  <div class="wrap gutter top-row">
+    <div class="brand">
+      <h1 class="wordmark">Acervo</h1>
+      <span class="brand-sub">Digitalizações · <span id="count-total">0 itens</span></span>
+    </div>
+    <button class="icon-btn" id="btn-settings" type="button" aria-label="Ajustes">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div id="storage-warn" class="wrap gutter" hidden>
+    <p class="note warn" style="margin-top:14px"><strong>Este navegador não está deixando o Acervo salvar dados (janela privada?).</strong> O que você adicionar agora some ao fechar a página.</p>
+  </div>
+
+  <section id="summary" class="wrap gutter summary" aria-label="Resumo por status" hidden>
+    <div class="bar" id="bar" aria-hidden="true"></div>
+    <div class="legend" id="legend" role="group" aria-label="Filtrar por status"></div>
+  </section>
+
+  <section id="controls" class="wrap gutter controls" aria-label="Filtros" hidden>
+    <label class="searchbox" for="filter-q">
+      <span class="sr-only">Filtrar o acervo</span>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>
+      <input class="inp" id="filter-q" type="search" placeholder="Filtrar por título, artista, selo, notas…" autocomplete="off" enterkeyhint="search">
+    </label>
+    <div class="chiprow" id="medium-chips" role="group" aria-label="Filtrar por mídia"></div>
+    <div class="tools">
+      <label class="sort" for="sort">Ordenar
+        <span class="selwrap">
+          <select class="inp" id="sort">
+            <option value="recent">Atualizados</option>
+            <option value="added">Adicionados</option>
+            <option value="artist">Artista</option>
+            <option value="title">Título</option>
+            <option value="year">Ano</option>
+            <option value="date">Data da digitalização</option>
+          </select>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+        </span>
+      </label>
+      <div class="seg" role="group" aria-label="Visualização">
+        <button type="button" id="view-list" aria-pressed="true" aria-label="Lista">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>
+        </button>
+        <button type="button" id="view-grid" aria-pressed="false" aria-label="Capas">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div id="nudge" class="wrap gutter" hidden></div>
+
+  <section class="wrap gutter listwrap" aria-label="Digitalizações">
+    <div id="items" class="rows"></div>
+    <div id="noresults" class="noresults" hidden>
+      <p>Nada no acervo com esses filtros.</p>
+      <button class="btn" type="button" id="clear-filters">Limpar filtros</button>
+    </div>
+    <div id="empty" class="empty" hidden></div>
+  </section>
+</main>
+
+<button class="fab" id="fab" type="button">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+  Adicionar
+</button>
+
+<div class="backdrop" id="sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" tabindex="-1">
+    <div class="sheet-head">
+      <button class="icon-btn" id="sheet-back" type="button" aria-label="Voltar" hidden>
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <h2 id="sheet-title"></h2>
+      <button class="icon-btn" id="sheet-close" type="button" aria-label="Fechar">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body" id="sheet-body"></div>
+    <div class="sheet-foot" id="sheet-foot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ================= Constantes ================= */
+const VERSION = '1.1';
+
+const MEDIA = [
+  { id: 'vinil', label: 'Vinil', dg: 'Vinyl', icon: 'vinyl',
+    details: ['LP 12" 33⅓ RPM', '12" 45 RPM', '7" 45 RPM', '10" 78 RPM'],
+    formats: ['FLAC 24-bit/96 kHz', 'FLAC 24-bit/192 kHz', 'WAV 24-bit/96 kHz', 'FLAC 16-bit/44,1 kHz'],
+    equip: 'Toca-discos → cápsula → pré → interface' },
+  { id: 'cd', label: 'CD', dg: 'CD', icon: 'disc',
+    details: ['CD', 'CD-R', 'SACD (camada CD)', 'HDCD', 'CD+G'],
+    formats: ['FLAC 16-bit/44,1 kHz', 'WAV + CUE', 'BIN/CUE (imagem)', 'ALAC'],
+    equip: 'Drive + programa (ex.: EAC, XLD)' },
+  { id: 'dvd', label: 'DVD', dg: 'DVD', icon: 'disc',
+    details: ['DVD-Video', 'DVD-Audio', 'DVD-R', 'NTSC', 'PAL'],
+    formats: ['ISO', 'MKV (remux)', 'VIDEO_TS'],
+    equip: 'Drive + programa (ex.: MakeMKV)' },
+  { id: 'bluray', label: 'Blu-ray', dg: 'Blu-ray', icon: 'disc',
+    details: ['BD-25', 'BD-50', 'BD-R'],
+    formats: ['ISO', 'MKV (remux)', 'BDMV'],
+    equip: 'Drive + programa (ex.: MakeMKV)' },
+  { id: 'k7', label: 'K7', dg: 'Cassette', icon: 'cassette',
+    details: ['Tipo I (normal)', 'Tipo II (cromo)', 'Tipo IV (metal)'],
+    formats: ['FLAC 24-bit/96 kHz', 'WAV 24-bit/96 kHz', 'FLAC 24-bit/48 kHz'],
+    equip: 'Tape deck → interface' },
+  { id: 'vhs', label: 'VHS', dg: 'VHS', icon: 'tape',
+    details: ['VHS', 'S-VHS', 'VHS-C', 'NTSC', 'PAL-M'],
+    formats: ['MKV FFV1 (sem perdas)', 'MKV H.264', 'AVI HuffYUV'],
+    equip: 'Videocassete → TBC → placa de captura' },
+  { id: 'outro', label: 'Outro', dg: '', icon: 'box',
+    details: ['LaserDisc', 'MiniDisc', 'DAT', 'Rolo (open reel)', 'Betamax'],
+    formats: ['FLAC', 'WAV', 'MKV', 'ISO'],
+    equip: 'Equipamento usado na captura' },
+];
+const MEDIUM = Object.fromEntries(MEDIA.map(m => [m.id, m]));
+
+const STATUS = [
+  { id: 'fila', label: 'Na fila' },
+  { id: 'andamento', label: 'Em andamento' },
+  { id: 'concluido', label: 'Concluído' },
+  { id: 'refazer', label: 'Refazer' },
+];
+const STATUS_IDS = STATUS.map(s => s.id);
+const LEGEND_ORDER = ['concluido', 'andamento', 'fila', 'refazer'];
+const statusLabel = id => (STATUS.find(s => s.id === id) || STATUS[0]).label;
+const legendLabel = (id, n) => ({ concluido: n === 1 ? 'concluído' : 'concluídos', andamento: 'em andamento', fila: 'na fila', refazer: 'a refazer' })[id];
+
+const GRADES = [
+  ['', 'Sem avaliação'], ['M', 'M · Mint'], ['NM', 'NM ou M- · Near Mint'], ['VG+', 'VG+ · Very Good Plus'],
+  ['VG', 'VG · Very Good'], ['G+', 'G+ · Good Plus'], ['G', 'G · Good'], ['F', 'F · Fair'], ['P', 'P · Poor'],
+];
+const GRADE_IDS = GRADES.map(g => g[0]);
+
+/* Formatos do Discogs → mídia de origem */
+const DG_FORMAT = {
+  'Vinyl': 'vinil', 'Shellac': 'vinil', 'Flexi-disc': 'vinil', 'Lathe Cut': 'vinil', 'Acetate': 'vinil', 'Pathé Disc': 'vinil', 'Edison Disc': 'vinil',
+  'CD': 'cd', 'CDr': 'cd', 'CDV': 'cd', 'SACD': 'cd', 'Hybrid': 'cd', 'HDCD': 'cd',
+  'DVD': 'dvd', 'DVDr': 'dvd', 'HD DVD': 'dvd',
+  'Blu-ray': 'bluray', 'Blu-ray-R': 'bluray',
+  'Cassette': 'k7', 'Microcassette': 'k7',
+  'VHS': 'vhs',
+  'Laserdisc': 'outro', 'Minidisc': 'outro', 'DAT': 'outro', 'Reel-To-Reel': 'outro', 'Betamax': 'outro',
+  '8-Track Cartridge': 'outro', 'Video 2000': 'outro', 'VCD': 'outro', 'CED': 'outro', 'Floppy Disk': 'outro', 'File': 'outro',
+};
+
+const ICONS = {
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',
+  external: '<path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/>',
+  next: '<path d="M9 5l7 7-7 7"/>',
+  chevron: '<path d="M7 10l5 5 5-5"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  vinyl: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/><path d="M12 12h.01M6.2 10a6 6 0 0 1 3.8-3.8M17.8 14a6 6 0 0 1-3.8 3.8"/>',
+  disc: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.6"/><circle cx="12" cy="12" r="1.1"/><path d="M15.6 6.5a6.5 6.5 0 0 1 2 2"/>',
+  cassette: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="8.5" cy="11" r="1.8"/><circle cx="15.5" cy="11" r="1.8"/><path d="M10.3 11h3.4M7.5 18l1.2-2.6h6.6l1.2 2.6"/>',
+  tape: '<rect x="2.5" y="6.5" width="19" height="11" rx="1.5"/><circle cx="8" cy="12.5" r="2.2"/><circle cx="16" cy="12.5" r="2.2"/><path d="M10.2 12.5h3.6M6 9.3h12"/>',
+  box: '<path d="M3.5 5h17v3.5h-17z"/><path d="M5 8.5h14V18a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><path d="M10 12h4"/>',
+  trash: '<path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/>',
+  copy: '<rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5 15V6a1 1 0 0 1 1-1h9"/>',
+  download: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/>',
+  upload: '<path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 19h14"/>',
+  layers: '<path d="M12 4l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4M4 16l8 4 8-4"/>',
+  key: '<circle cx="8" cy="12" r="3.5"/><path d="M11.5 12H20M17 12v3M20 12v2"/>',
+  eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+  phone: '<rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+};
+
+/* ================= Utilidades ================= */
+const $ = (sel, root = document) => root.querySelector(sel);
+
+function h(tag, attrs, ...children) {
+  const el = document.createElement(tag);
+  if (attrs) {
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v == null || v === false) continue;
+      if (k === 'class') el.className = v;
+      else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+      else if (v === true) el.setAttribute(k, '');
+      else el.setAttribute(k, v);
+    }
+  }
+  for (const c of children.flat(Infinity)) {
+    if (c == null || c === false || c === '') continue;
+    el.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+  return el;
+}
+
+function icon(name, size = 20) {
+  const t = document.createElement('template');
+  t.innerHTML = `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+  return t.content.firstChild;
+}
+
+const pad = n => String(n).padStart(2, '0');
+function todayISO() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+function fmtDate(iso) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : ''; }
+function fmtDay(ts) { const d = new Date(ts); return isNaN(d) ? '' : d.toLocaleDateString('pt-BR'); }
+const nf = new Intl.NumberFormat('pt-BR');
+const fmtN = n => nf.format(n || 0);
+const plural = (n, one, many) => (n === 1 ? one : many);
+const collator = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true });
+function norm(s) { return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+function uid() {
+  if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+function hashHue(s) { let x = 7; for (const ch of String(s)) x = (x * 31 + ch.codePointAt(0)) >>> 0; return x % 360; }
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+const uniq = arr => [...new Set(arr.filter(Boolean))];
+const clone = o => (typeof structuredClone === 'function' ? structuredClone(o) : JSON.parse(JSON.stringify(o)));
+function isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+function isStandalone() { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+const coarse = () => window.matchMedia && matchMedia('(pointer: coarse)').matches;
+
+const store = {
+  get(k) { try { return localStorage.getItem('acervo:' + k); } catch (e) { return null; } },
+  set(k, v) { try { if (v == null || v === '') localStorage.removeItem('acervo:' + k); else localStorage.setItem('acervo:' + k, String(v)); } catch (e) { /* armazenamento indisponível */ } },
+};
+
+const cleanName = s => String(s || '').replace(/\s\(\d+\)/g, '').replace(/\*/g, '').trim();
+const goodImg = u => (typeof u === 'string' && /^https:\/\//.test(u) && !/spacer\.gif|\/images\/default/i.test(u) ? u : '');
+const safeImg = u => (typeof u === 'string' && /^https:\/\/([a-z0-9-]+\.)*discogs\.com\//i.test(u) && !/spacer\.gif/i.test(u) ? u : '');
+
+function initials(it) {
+  const words = String(it.title || it.artist || '?').replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean);
+  return (((words[0] || '?')[0] || '?') + ((words[1] || '')[0] || '')).toUpperCase();
+}
+
+/* ================= Dados (IndexedDB) ================= */
+const DB = {
+  db: null,
+  mem: null,
+  async open() {
+    if (!('indexedDB' in window)) { this.mem = new Map(); return; }
+    try {
+      this.db = await new Promise((resolve, reject) => {
+        const r = indexedDB.open('acervo', 1);
+        r.onupgradeneeded = () => {
+          const db = r.result;
+          if (!db.objectStoreNames.contains('items')) db.createObjectStore('items', { keyPath: 'id' });
+        };
+        r.onsuccess = () => resolve(r.result);
+        r.onerror = () => reject(r.error);
+        r.onblocked = () => reject(new Error('blocked'));
+      });
+    } catch (e) {
+      this.mem = new Map();
+    }
+  },
+  store(mode) { return this.db.transaction('items', mode).objectStore('items'); },
+  wrap(req) { return new Promise((res, rej) => { req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); }); },
+  async all() { return this.mem ? [...this.mem.values()] : this.wrap(this.store('readonly').getAll()); },
+  async put(item) { if (this.mem) { this.mem.set(item.id, item); return; } return this.wrap(this.store('readwrite').put(item)); },
+  async del(id) { if (this.mem) { this.mem.delete(id); return; } return this.wrap(this.store('readwrite').delete(id)); },
+  async putMany(items) {
+    if (this.mem) { items.forEach(i => this.mem.set(i.id, i)); return; }
+    await new Promise((resolve, reject) => {
+      const tx = this.db.transaction('items', 'readwrite');
+      const st = tx.objectStore('items');
+      items.forEach(i => st.put(i));
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  },
+};
+
+function normalizeItem(r) {
+  const s = (v, max = 2000) => (v == null ? '' : String(v)).slice(0, max);
+  const n = v => { const x = parseInt(v, 10); return Number.isFinite(x) && x > 0 ? x : null; };
+  const d = (r && typeof r.discogs === 'object' && r.discogs) || {};
+  const releaseId = n(d.releaseId), masterId = n(d.masterId);
+  const url = /^https:\/\/(www\.)?discogs\.com\//.test(d.url || '') ? s(d.url, 500)
+    : releaseId ? `https://www.discogs.com/release/${releaseId}` : masterId ? `https://www.discogs.com/master/${masterId}` : '';
+  const year = n(r.year);
+  const now = new Date().toISOString();
+  return {
+    id: s(r.id, 80) || uid(),
+    createdAt: s(r.createdAt, 40) || now,
+    updatedAt: s(r.updatedAt, 40) || now,
+    discogs: { type: d.type === 'release' || d.type === 'master' ? d.type : (releaseId ? 'release' : masterId ? 'master' : null), releaseId, masterId, url },
+    title: s(r.title, 500).trim(),
+    artist: s(r.artist, 500).trim(),
+    year: year && year < 2200 ? year : null,
+    country: s(r.country, 80),
+    label: s(r.label, 200),
+    catno: s(r.catno, 120),
+    formatText: s(r.formatText, 300),
+    thumb: safeImg(r.thumb),
+    cover: safeImg(r.cover),
+    medium: MEDIUM[r.medium] ? r.medium : 'outro',
+    mediumDetail: s(r.mediumDetail, 120),
+    status: STATUS_IDS.includes(r.status) ? r.status : 'concluido',
+    date: /^\d{4}-\d{2}-\d{2}$/.test(r.date || '') ? r.date : '',
+    fileFormat: s(r.fileFormat, 200),
+    equipment: s(r.equipment, 400),
+    grade: GRADE_IDS.includes(r.grade) ? r.grade : '',
+    location: s(r.location, 400),
+    notes: s(r.notes, 8000),
+  };
+}
+
+/* ================= Discogs ================= */
+document.addEventListener('securitypolicyviolation', e => {
+  if (e.violatedDirective && e.violatedDirective.startsWith('connect-src') && /discogs\.com/.test(e.blockedURI || '')) DG.blocked = true;
+});
+function cleanToken(t) {
+  return String(t || '').replace(/^\s*(authorization:\s*)?(discogs\s+)?token\s*=\s*/i, '').replace(/["'\s]/g, '');
+}
+const DG = {
+  base: 'https://api.discogs.com',
+  get token() { return cleanToken(store.get('dg_token')); },
+  degraded: false,
+  blocked: false, // a página hospedeira proíbe conexões externas (CSP connect-src)
+  setToken(t) { store.set('dg_token', cleanToken(t) || null); },
+  async req(path, params = {}, { signal } = {}) {
+    if (navigator.onLine === false) throw { code: 'offline' };
+    const tok = this.token;
+    const pref = store.get('dg_mode') === 'query' ? 'query' : 'header';
+    // Token inválido: o Discogs responde 401 sem cabeçalho CORS e o navegador mostra só "falha de rede".
+    // Por isso, se as duas formas com token falharem, a última tentativa é sem token (a busca pública funciona).
+    const modes = tok ? [pref, pref === 'header' ? 'query' : 'header', 'none'] : ['none'];
+    this.degraded = false;
+    let lastErr = { code: 'network' };
+    for (const mode of modes) {
+      const url = new URL(this.base + path);
+      for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
+      const init = { signal, headers: {} };
+      if (mode === 'header') init.headers.Authorization = 'Discogs token=' + tok;
+      if (mode === 'query') url.searchParams.set('token', tok);
+      let res;
+      try {
+        res = await fetch(url.toString(), init);
+      } catch (e) {
+        if (e && e.name === 'AbortError') throw e;
+        lastErr = { code: 'network' };
+        continue; // falha de rede ou CORS: tenta a outra forma de enviar o token
+      }
+      if (mode !== 'none' && mode !== pref) store.set('dg_mode', mode);
+      if (mode === 'none' && tok) this.degraded = true;
+      if (res.ok) return res.json();
+      if (res.status === 401) throw { code: 'auth', status: 401 };
+      if (res.status === 404) throw { code: 'notfound', status: 404 };
+      if (res.status === 429) throw { code: 'rate', status: 429 };
+      throw { code: 'http', status: res.status };
+    }
+    throw lastErr;
+  },
+  search(params, signal) { return this.req('/database/search', params, { signal }); },
+  async release(id) {
+    const r = await this.req(`/releases/${id}`);
+    const fm = Array.isArray(r.formats) ? r.formats : [];
+    const imgs = Array.isArray(r.images) ? r.images : [];
+    const img = imgs.find(i => i.type === 'primary') || imgs[0] || {};
+    const lab = (Array.isArray(r.labels) && r.labels[0]) || {};
+    const main = fm.find(f => DG_FORMAT[f.name]);
+    const medium = main ? DG_FORMAT[main.name] : '';
+    const descs = main ? [...(main.descriptions || []), ...String(main.text || '').split(',').map(x => x.trim())] : [];
+    return {
+      title: r.title || '',
+      artist: joinArtists(r.artists) || cleanName(r.artists_sort),
+      year: r.year || null,
+      country: r.country || '',
+      label: cleanName(lab.name || ''),
+      catno: lab.catno && String(lab.catno).toLowerCase() !== 'none' ? String(lab.catno) : '',
+      formatText: formatTextFrom(fm),
+      thumb: goodImg(img.uri150 || r.thumb),
+      cover: goodImg(img.uri || img.uri150),
+      medium,
+      mediumDetail: main ? detailFor(main.name, descs, medium) : '',
+      discogs: { type: 'release', releaseId: r.id, masterId: r.master_id || null, url: fullUrl(r.uri, 'release', r.id) },
+    };
+  },
+  async master(id) {
+    const m = await this.req(`/masters/${id}`);
+    const imgs = Array.isArray(m.images) ? m.images : [];
+    const img = imgs.find(i => i.type === 'primary') || imgs[0] || {};
+    return {
+      title: m.title || '',
+      artist: joinArtists(m.artists),
+      year: m.year || null,
+      thumb: goodImg(img.uri150),
+      cover: goodImg(img.uri || img.uri150),
+      discogs: { type: 'master', releaseId: null, masterId: m.id, url: fullUrl(m.uri, 'master', m.id) },
+    };
+  },
+  versions(masterId, params, signal) {
+    return this.req(`/masters/${masterId}/versions`, { per_page: 50, sort: 'released', sort_order: 'asc', ...params }, { signal });
+  },
+};
+
+function fullUrl(uri, type, id) {
+  if (typeof uri === 'string' && /^https:\/\/(www\.)?discogs\.com\//.test(uri)) return uri;
+  if (typeof uri === 'string' && uri.startsWith('/')) return 'https://www.discogs.com' + uri;
+  return `https://www.discogs.com/${type}/${id}`;
+}
+function joinArtists(arr) {
+  if (!Array.isArray(arr) || !arr.length) return '';
+  let out = '';
+  arr.forEach((a, i) => {
+    out += cleanName(a.anv || a.name);
+    if (i < arr.length - 1) { const j = String(a.join || ',').trim() || ','; out += j === ',' ? ', ' : ` ${j} `; }
+  });
+  return out.replace(/\s+/g, ' ').trim();
+}
+function formatTextFrom(fm) {
+  return fm.map(f => [(+f.qty > 1 ? `${f.qty}× ` : '') + f.name, ...(f.descriptions || []), f.text].filter(Boolean).join(', ')).join(' + ');
+}
+function detailFor(name, descs, medium) {
+  const d = (descs || []).map(x => String(x).trim()).filter(Boolean);
+  if (medium === 'vinil') {
+    const kind = d.find(x => /^(LP|EP|Single|Maxi-Single|Mini-Album)$/i.test(x));
+    const size = d.find(x => /^\d+(\.\d+)?"$/.test(x));
+    const rpm = d.find(x => /RPM$/i.test(x));
+    let out = [kind, size, rpm && rpm.replace(/33\s*⅓/, '33⅓')].filter(Boolean).join(' ');
+    if (name === 'Shellac') out = (out ? out + ' · ' : '') + 'goma-laca';
+    return out;
+  }
+  if (medium === 'cd') {
+    if (name === 'CDr') return 'CD-R';
+    if (name === 'SACD' || name === 'Hybrid') return 'SACD';
+    if (d.includes('HDCD') || name === 'HDCD') return 'HDCD';
+    return '';
+  }
+  if (medium === 'dvd' || medium === 'vhs' || medium === 'bluray') {
+    const sys = d.find(x => /^(NTSC|PAL|PAL-M|SECAM)$/i.test(x));
+    return sys || (name === 'DVDr' ? 'DVD-R' : '');
+  }
+  if (medium === 'outro') {
+    return ({ Laserdisc: 'LaserDisc', Minidisc: 'MiniDisc', DAT: 'DAT', 'Reel-To-Reel': 'Rolo (open reel)', Betamax: 'Betamax', '8-Track Cartridge': 'Cartucho 8-track' })[name] || name || '';
+  }
+  return '';
+}
+function fromFormatList(list) {
+  const arr = (list || []).map(x => String(x).trim()).filter(Boolean);
+  const name = arr.find(x => DG_FORMAT[x]);
+  const medium = name ? DG_FORMAT[name] : '';
+  return { medium, detail: medium ? detailFor(name, arr.filter(x => !DG_FORMAT[x]), medium) : '' };
+}
+function normResult(r) {
+  const raw = String(r.title || '');
+  const cut = raw.indexOf(' - ');
+  const fmts = Array.isArray(r.format) ? r.format : [];
+  const inf = fromFormatList(fmts);
+  return {
+    type: r.type === 'master' ? 'master' : 'release',
+    id: r.id,
+    masterId: r.type === 'master' ? r.id : (r.master_id || null),
+    title: cut > 0 ? raw.slice(cut + 3).trim() : raw.trim(),
+    artist: cut > 0 ? cleanName(raw.slice(0, cut)) : '',
+    year: parseInt(r.year, 10) || null,
+    country: r.country || '',
+    label: cleanName((Array.isArray(r.label) && r.label[0]) || ''),
+    catno: r.catno && String(r.catno).toLowerCase() !== 'none' ? String(r.catno) : '',
+    formatText: uniq(fmts).join(', '),
+    medium: inf.medium,
+    detail: inf.detail,
+    thumb: goodImg(r.thumb),
+    cover: goodImg(r.cover_image),
+    url: fullUrl(r.uri, r.type === 'master' ? 'master' : 'release', r.id),
+  };
+}
+function parseQuery(q) {
+  const s = q.trim();
+  let m = s.match(/discogs\.com\/(?:[a-z]{2}(?:_[a-z]{2})?\/)?(?:[^\/?#\s]+\/)?(release|master)\/(\d+)/i);
+  if (m) return { kind: 'url', type: m[1].toLowerCase(), id: +m[2] };
+  m = s.match(/^\[?([rm])(\d+)\]?$/i);
+  if (m) return { kind: 'url', type: m[1].toLowerCase() === 'r' ? 'release' : 'master', id: +m[2] };
+  const digits = s.replace(/[\s-]/g, '');
+  if (/^\d{8,14}$/.test(digits)) return { kind: 'barcode', value: digits };
+  return { kind: 'text', value: s };
+}
+function errText(e) {
+  switch (e && e.code) {
+    case 'notoken': return 'Para buscar por nome ou código de barras, salve seu token do Discogs. Links do Discogs funcionam sem token.';
+    case 'auth': return 'O Discogs recusou o token salvo. Gere um novo em Discogs → Configurações → Desenvolvedores e cole em Ajustes.';
+    case 'rate': return 'Muitas buscas em pouco tempo. Espere alguns segundos e tente de novo.';
+    case 'notfound': return 'Esse item não existe no Discogs (ou foi removido).';
+    case 'offline': return 'Sem internet agora. O acervo continua disponível; a busca volta com a conexão.';
+    case 'network': return DG.blocked
+      ? 'Este endereço bloqueia conexões com outros sites (é o caso do Neocities), então o app não consegue chegar ao Discogs. Hospede o app no GitHub Pages, no Netlify ou no Cloudflare Pages.'
+      : 'Não consegui falar com o Discogs. Confira a conexão e tente de novo.';
+    case 'http': return `O Discogs respondeu com erro ${e.status}. Tente de novo em instantes.`;
+    default: return 'Algo deu errado ao falar com o Discogs. Tente de novo.';
+  }
+}
+async function testToken(t) {
+  const prev = DG.token;
+  DG.setToken(t);
+  try {
+    const me = await DG.req('/oauth/identity');
+    store.set('dg_user', me && me.username);
+    render();
+    return { ok: true, message: me && me.username ? `Conectado como @${me.username}.` : 'Token aceito pelo Discogs.' };
+  } catch (e) {
+    if (e && e.code === 'auth') {
+      DG.setToken(prev);
+      return { ok: false, message: 'O Discogs não aceitou esse token. Confira se copiou o código inteiro (só o token, sem espaços) ou gere um novo.' };
+    }
+    store.set('dg_user', null);
+    render();
+    return { ok: true, message: 'Token salvo, mas não deu para testar agora. ' + errText(e) };
+  }
+}
+
+/* ================= Estado e lista principal ================= */
+const S = {
+  items: [],
+  q: '',
+  medium: '',
+  status: '',
+  sort: store.get('sort') || 'recent',
+  view: store.get('view') === 'grid' ? 'grid' : 'list',
+};
+
+const hayCache = new WeakMap();
+function hay(it) {
+  let v = hayCache.get(it);
+  if (!v) {
+    v = norm([it.title, it.artist, it.label, it.catno, it.year, it.country, it.notes, it.equipment, it.location, it.fileFormat, it.mediumDetail, it.formatText].join(' '));
+    hayCache.set(it, v);
+  }
+  return v;
+}
+function ownedFor(releaseId, masterId, excludeId) {
+  return S.items.filter(it => it.id !== excludeId && ((releaseId && it.discogs.releaseId === releaseId) || (masterId && it.discogs.masterId === masterId)));
+}
+function history(key, medium) {
+  const counts = new Map();
+  for (const it of S.items) {
+    const v = String(it[key] || '').trim();
+    if (!v || (medium && it.medium !== medium)) continue;
+    counts.set(v, (counts.get(v) || 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
+}
+function sortItems(arr) {
+  const art = it => String(it.artist || '').replace(/^the\s+/i, '');
+  const byUpdated = (a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '');
+  const cmp = {
+    recent: byUpdated,
+    added: (a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''),
+    artist: (a, b) => collator.compare(art(a), art(b)) || collator.compare(a.title, b.title) || (a.year || 0) - (b.year || 0),
+    title: (a, b) => collator.compare(a.title, b.title) || collator.compare(art(a), art(b)),
+    year: (a, b) => (a.year || 1e4) - (b.year || 1e4) || collator.compare(art(a), art(b)),
+    date: (a, b) => (b.date || '').localeCompare(a.date || '') || byUpdated(a, b),
+  }[S.sort] || byUpdated;
+  return arr.sort(cmp);
+}
+
+function coverEl(it, size) {
+  const box = h('span', { class: 'cover' });
+  const src = size === 'large' ? (it.cover || it.thumb) : (it.thumb || it.cover);
+  const ph = () => {
+    const p = h('span', { class: 'ph' }, h('b', null, initials(it)), icon((MEDIUM[it.medium] || {}).icon || 'vinyl'));
+    p.style.setProperty('--h', hashHue((it.artist || '') + '|' + (it.title || '')));
+    return p;
+  };
+  if (src) {
+    const img = h('img', { src, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer' });
+    img.addEventListener('error', () => img.replaceWith(ph()), { once: true });
+    box.append(img);
+  } else {
+    box.append(ph());
+  }
+  return box;
+}
+function mtag(medium) {
+  const M = MEDIUM[medium] || MEDIUM.outro;
+  return h('span', { class: 'mtag' }, icon(M.icon, 13), M.label);
+}
+function pill(status) { return h('span', { class: 'pill st-' + status }, statusLabel(status)); }
+
+function itemRow(it) {
+  const meta = [it.year, [it.label, it.catno].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
+  return h('button', { class: 'row', type: 'button', onclick: () => openEdit(it.id) },
+    coverEl(it, 'thumb'),
+    h('span', { class: 'row-main' },
+      h('span', { class: 'row-title' }, it.title || 'Sem título'),
+      h('span', { class: 'row-sub' }, it.artist || 'Artista não informado', meta ? h('span', { class: 'mono' }, ' · ' + meta) : null),
+      h('span', { class: 'row-tags' }, mtag(it.medium), pill(it.status), it.date ? h('span', { class: 'date' }, fmtDate(it.date)) : null)));
+}
+function itemCard(it) {
+  const cv = coverEl(it, 'large');
+  cv.append(h('span', { class: 'sdot st-' + it.status }), h('span', { class: 'mtag over' }, (MEDIUM[it.medium] || MEDIUM.outro).label));
+  const label = [it.title || 'Sem título', it.artist, (MEDIUM[it.medium] || MEDIUM.outro).label, statusLabel(it.status)].filter(Boolean).join(', ');
+  return h('button', { class: 'card', type: 'button', 'aria-label': label, onclick: () => openEdit(it.id) },
+    cv,
+    h('span', { class: 'card-title' }, it.title || 'Sem título'),
+    h('span', { class: 'card-artist' }, it.artist || '—'));
+}
+
+function render() {
+  const total = S.items.length;
+  $('#count-total').textContent = `${fmtN(total)} ${plural(total, 'item', 'itens')}`;
+  $('#summary').hidden = total === 0;
+  $('#controls').hidden = total === 0;
+  $('#fab').hidden = false;
+
+  const q = norm(S.q.trim());
+  const byText = q ? S.items.filter(it => hay(it).includes(q)) : S.items.slice();
+
+  // resumo por status (respeita busca e mídia)
+  const forStatus = byText.filter(it => !S.medium || it.medium === S.medium);
+  const counts = { fila: 0, andamento: 0, concluido: 0, refazer: 0 };
+  forStatus.forEach(it => { counts[it.status] = (counts[it.status] || 0) + 1; });
+  $('#bar').replaceChildren(...LEGEND_ORDER.filter(s => counts[s]).map(s => { const sp = h('span', { class: 'st-' + s }); sp.style.flexGrow = counts[s]; return sp; }));
+  $('#legend').replaceChildren(...LEGEND_ORDER.map(s => h('button', {
+    type: 'button', class: 'st-' + s, 'aria-pressed': String(S.status === s),
+    onclick: () => { S.status = S.status === s ? '' : s; render(); },
+  }, h('span', { class: 'dot' }), h('span', { class: 'n' }, fmtN(counts[s])), legendLabel(s, counts[s]))));
+
+  // chips de mídia (respeita busca e status)
+  const forMedium = byText.filter(it => !S.status || it.status === S.status);
+  const mcount = {};
+  forMedium.forEach(it => { mcount[it.medium] = (mcount[it.medium] || 0) + 1; });
+  const row = $('#medium-chips');
+  const scroll = row.scrollLeft;
+  const chips = [h('button', { type: 'button', class: 'chip', 'aria-pressed': String(!S.medium), onclick: () => { S.medium = ''; render(); } },
+    'Todas', h('span', { class: 'c' }, fmtN(forMedium.length)))];
+  for (const m of MEDIA) {
+    const c = mcount[m.id] || 0;
+    if (!c && S.medium !== m.id) continue;
+    chips.push(h('button', { type: 'button', class: 'chip', 'aria-pressed': String(S.medium === m.id), onclick: () => { S.medium = S.medium === m.id ? '' : m.id; render(); } },
+      icon(m.icon, 16), m.label, h('span', { class: 'c' }, fmtN(c))));
+  }
+  row.replaceChildren(...chips);
+  row.scrollLeft = scroll;
+
+  // itens
+  const list = sortItems(forMedium.filter(it => !S.medium || it.medium === S.medium));
+  const box = $('#items');
+  box.className = S.view === 'grid' ? 'grid' : 'rows';
+  const frag = document.createDocumentFragment();
+  for (const it of list) frag.append(S.view === 'grid' ? itemCard(it) : itemRow(it));
+  box.replaceChildren(frag);
+
+  $('#noresults').hidden = !(total > 0 && list.length === 0);
+  const empty = $('#empty');
+  empty.hidden = total !== 0;
+  if (total === 0) renderEmpty(empty);
+  renderNudge();
+}
+
+function renderEmpty(el) {
+  const hasTok = !!DG.token;
+  el.replaceChildren(
+    h('h2', null, 'Nenhuma digitalização ainda'),
+    h('p', null, 'Registre cada transferência: o álbum direto do Discogs, a mídia de origem e em que pé está, da fila ao arquivo final.'),
+    h('ol', { class: 'steps' },
+      h('li', { class: hasTok ? 'done' : null }, h('span', null, h('strong', null, 'Conecte o Discogs'), h('br'),
+        hasTok ? 'Token salvo neste aparelho.' : h('span', null, 'Cole seu token pessoal em ', h('button', { class: 'linkbtn', type: 'button', onclick: openSettings }, 'Ajustes'), '.'))),
+      h('li', null, h('span', null, h('strong', null, 'Busque o álbum'), h('br'), 'Pelo nome, pelo link do Discogs ou pelo código de barras.')),
+      h('li', null, h('span', null, h('strong', null, 'Escolha a mídia e o status'), h('br'), 'Vinil, CD, DVD, K7, VHS… e se está na fila, em andamento ou concluída.'))),
+    h('div', { class: 'btnrow' }, h('button', { class: 'btn btn-primary', type: 'button', onclick: openAdd }, icon('plus', 18), 'Adicionar digitalização')),
+    isIOS() && !isStandalone() ? h('p', { class: 'fine' }, 'No iPhone: toque em Compartilhar e depois em “Adicionar à Tela de Início”, e cadastre pelo app que aparece lá. Ele guarda os dados separado do Safari.') : '');
+}
+
+function renderNudge() {
+  const el = $('#nudge');
+  const n = S.items.length;
+  const last = store.get('last_export');
+  const snooze = +(store.get('nudge_snooze') || 0);
+  const days = last ? (Date.now() - Date.parse(last)) / 864e5 : Infinity;
+  const show = n >= 10 && days > 30 && Date.now() > snooze;
+  el.hidden = !show;
+  if (!show) return;
+  el.replaceChildren(h('div', { class: 'note nudge' },
+    h('p', null, h('strong', null, last ? `Último backup há ${Math.floor(days)} dias.` : 'Nenhum backup exportado ainda.'), ' Os dados ficam só neste aparelho.'),
+    h('button', { class: 'btn btn-primary', type: 'button', onclick: () => exportJSON() }, icon('download', 18), 'Exportar agora'),
+    h('button', { class: 'btn', type: 'button', onclick: () => { store.set('nudge_snooze', Date.now() + 7 * 864e5); renderNudge(); } }, 'Depois')));
+}
+
+/* ================= Folha (sheet) ================= */
+const Sheet = {
+  stack: [],
+  lastFocus: null,
+  get top() { return this.stack[this.stack.length - 1]; },
+  get isOpen() { return !$('#sheet').hidden; },
+  show(view) {
+    if (!this.isOpen) this.lastFocus = document.activeElement;
+    this.stack = [view];
+    $('#sheet').hidden = false;
+    document.body.classList.add('locked');
+    this.paint(true);
+  },
+  push(view) { this.saveScroll(); this.stack.push(view); this.paint(true); },
+  replace(view) { this.stack[this.stack.length - 1] = view; this.paint(true); },
+  rerender() { this.saveScroll(); this.paint(false); },
+  back() {
+    if (this.stack.length <= 1) return this.requestClose();
+    const top = this.top;
+    if (top.dirty && !confirm('Descartar o que você preencheu?')) return;
+    this.stack.pop();
+    this.paint(false);
+  },
+  requestClose() {
+    if (this.stack.some(v => v.dirty) && !confirm('Descartar o que você preencheu?')) return;
+    this.close();
+  },
+  close() {
+    this.stack = [];
+    $('#sheet').hidden = true;
+    document.body.classList.remove('locked');
+    $('#sheet-body').replaceChildren();
+    $('#sheet-foot').replaceChildren();
+    if (this.lastFocus && document.contains(this.lastFocus)) this.lastFocus.focus({ preventScroll: true });
+  },
+  saveScroll() { if (this.top) this.top.scroll = $('#sheet-body').scrollTop; },
+  paint(fresh) {
+    const v = this.top;
+    const body = $('#sheet-body'), foot = $('#sheet-foot');
+    $('#sheet-title').textContent = v.title;
+    $('#sheet-back').hidden = this.stack.length < 2;
+    body.replaceChildren();
+    foot.replaceChildren();
+    v.render(body, foot);
+    body.scrollTop = fresh ? 0 : (v.scroll || 0);
+    const target = fresh && v.autofocus ? v.autofocus() : null;
+    if (target) target.focus();
+    else if (fresh) $('.sheet').focus({ preventScroll: true });
+  },
+};
+
+function onKey(e) {
+  if (Sheet.isOpen) {
+    if (e.key === 'Escape') { e.preventDefault(); Sheet.back(); return; }
+    if (e.key === 'Tab') {
+      const nodes = [...$('.sheet').querySelectorAll('a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select, textarea, summary')]
+        .filter(n => n.offsetParent !== null && !n.closest('[hidden]'));
+      if (!nodes.length) return;
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === $('.sheet'))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    return;
+  }
+  if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '') && S.items.length) {
+    e.preventDefault();
+    $('#filter-q').focus();
+  }
+}
+
+let toastTimer;
+function toast(msg, opts = {}) {
+  const el = $('#toast');
+  el.replaceChildren(h('span', null, msg));
+  if (opts.action) {
+    el.append(h('button', { type: 'button', onclick: () => { el.hidden = true; clearTimeout(toastTimer); opts.onAction(); } }, opts.action));
+  }
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, opts.duration || 3400);
+}
+
+/* ================= Peças de formulário ================= */
+function choice(name, value, content, checked, onChange, cls = '') {
+  const id = `${name}-${value}`;
+  const input = h('input', { type: 'radio', name, value, id, checked: checked || null });
+  input.addEventListener('change', () => { if (input.checked) onChange(value); });
+  return h('label', { class: ('choice ' + cls).trim(), for: id }, input, h('span', null, content));
+}
+function selwrap(select) { return h('span', { class: 'selwrap' }, select, icon('chevron', 16)); }
+function segmented(options, current, onPick) {
+  const wrap = h('div', { class: 'segtext', role: 'group' });
+  const paint = val => wrap.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === val)));
+  for (const [val, label] of options) {
+    const b = h('button', { type: 'button', 'aria-pressed': String(val === current), onclick: () => { paint(val); onPick(val); } }, label);
+    b.dataset.v = val;
+    wrap.append(b);
+  }
+  return wrap;
+}
+function chipsRow(options, current, onPick, ariaLabel) {
+  const row = h('div', { class: 'chiprow', role: 'group', 'aria-label': ariaLabel });
+  const paint = val => row.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === val)));
+  for (const [val, label, ic] of options) {
+    const b = h('button', { type: 'button', class: 'chip', 'aria-pressed': String(val === current), onclick: () => { paint(val); onPick(val); } }, ic ? icon(ic, 16) : null, label);
+    b.dataset.v = val;
+    row.append(b);
+  }
+  return row;
+}
+function spinnerLine(text) { return [h('span', { class: 'spinner', 'aria-hidden': 'true' }), text]; }
+
+function sugField(draft, { id, label, key, placeholder, sugs, onInput }) {
+  const ph = () => (typeof placeholder === 'function' ? placeholder() : placeholder);
+  const input = h('input', { class: 'inp', id, value: draft[key] || '', placeholder: ph(), autocomplete: 'off' });
+  const box = h('div', { class: 'sugs' });
+  const update = () => {
+    const cur = input.value.trim();
+    const list = sugs().filter(s => s && s !== cur).slice(0, 6);
+    box.replaceChildren(...list.map(s => h('button', { type: 'button', class: 'sug', title: s, onclick: () => { input.value = s; draft[key] = s; onInput && onInput(); update(); } }, s)));
+    box.hidden = !list.length;
+    input.placeholder = ph();
+  };
+  input.addEventListener('input', () => { draft[key] = input.value; onInput && onInput(); });
+  input.addEventListener('change', update);
+  update();
+  return { el: h('div', { class: 'field' }, h('label', { class: 'lbl', for: id }, label), input, box), input, update };
+}
+
+/* ================= Telas: adicionar (busca no Discogs) ================= */
+function blankDraft() {
+  return {
+    id: null, createdAt: null,
+    discogs: { type: null, releaseId: null, masterId: null, url: '' },
+    title: '', artist: '', year: null, country: '', label: '', catno: '', formatText: '', thumb: '', cover: '',
+    medium: '', mediumDetail: '', status: 'concluido', date: '', fileFormat: '', equipment: '', grade: '', location: '', notes: '',
+  };
+}
+
+function tokenCard(onSaved) {
+  const inp = h('input', { class: 'inp', id: 'tok-inline', type: 'password', placeholder: 'Cole o token aqui', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
+  const msg = h('p', { class: 'msg', role: 'status' });
+  const btn = h('button', { class: 'btn btn-primary', type: 'submit' }, 'Salvar');
+  return h('form', {
+    class: 'note tokencard',
+    onsubmit: async e => {
+      e.preventDefault();
+      const t = inp.value.trim();
+      if (!t) { msg.textContent = 'Cole o token antes de salvar.'; return; }
+      btn.disabled = true;
+      msg.replaceChildren(...spinnerLine('Testando com o Discogs…'));
+      const r = await testToken(t);
+      btn.disabled = false;
+      msg.textContent = r.message;
+      if (r.ok) { toast(r.message); onSaved(); }
+    },
+  },
+  h('strong', null, 'Conecte o Discogs para buscar'),
+  h('p', null, 'A busca por nome usa o seu token pessoal do Discogs. É gratuito e leva um minuto:'),
+  h('ol', { class: 'mini-steps' },
+    h('li', null, 'Abra ', h('a', { href: 'https://www.discogs.com/settings/developers', target: '_blank', rel: 'noopener' }, 'Discogs → Configurações → Desenvolvedores'), '.'),
+    h('li', null, 'Gere um token pessoal e copie o código.'),
+    h('li', null, 'Cole aqui e salve.')),
+  h('div', { class: 'inline-form' }, h('label', { class: 'sr-only', for: 'tok-inline' }, 'Token do Discogs'), inp, btn),
+  msg,
+  h('p', { class: 'fine' }, 'O token fica salvo só neste aparelho e vai apenas para o Discogs. Links do Discogs funcionam mesmo sem token, só que sem capa.'));
+}
+
+function searchView() {
+  const st = {
+    q: '', type: store.get('stype') === 'release' ? 'release' : 'master', format: '',
+    results: [], page: 0, pages: 0, total: 0, loading: false, loadingText: '', error: null, searched: false, lastQ: '', kind: 'text', ctl: null,
+  };
+  const v = { title: 'Adicionar digitalização' };
+  let input, statusEl, resultsEl, moreBtn, formatRow;
+
+  v.autofocus = () => input;
+  v.render = (body, foot) => {
+    if (!DG.token) body.append(tokenCard(() => Sheet.rerender()));
+    input = h('input', { class: 'inp', type: 'search', id: 'dg-q', value: st.q, placeholder: 'Álbum, artista, código de barras ou link', enterkeyhint: 'search', autocomplete: 'off', autocorrect: 'off', spellcheck: 'false' });
+    input.addEventListener('input', () => { st.q = input.value; autoSearch(); });
+    const form = h('form', { class: 'searchform', role: 'search', onsubmit: e => { e.preventDefault(); input.blur(); go(true); } },
+      h('label', { class: 'searchbox', for: 'dg-q' }, h('span', { class: 'sr-only' }, 'Buscar no Discogs'), icon('search', 18), input),
+      h('button', { class: 'btn btn-primary', type: 'submit' }, 'Buscar'));
+    const seg = segmented([['master', 'Álbuns'], ['release', 'Edições']], st.type, val => {
+      st.type = val; store.set('stype', val); formatRow.hidden = val !== 'release';
+      if (st.q.trim()) go(true);
+    });
+    formatRow = chipsRow([['', 'Qualquer formato'], ...MEDIA.filter(m => m.dg).map(m => [m.id, m.label, m.icon])], st.format, val => { st.format = val; if (st.q.trim()) go(true); }, 'Formato');
+    formatRow.hidden = st.type !== 'release';
+    statusEl = h('div', { class: 'status-line', role: 'status', 'aria-live': 'polite' });
+    resultsEl = h('div', { class: 'results' });
+    moreBtn = h('button', { class: 'btn btn-block', type: 'button', hidden: true, onclick: () => go(false) }, 'Mais resultados');
+    body.append(form, seg, formatRow,
+      h('p', { class: 'hint' }, 'Álbuns reúne todas as versões de um disco; Edições mostra cada prensagem, com país, selo e nº de catálogo.'),
+      statusEl, resultsEl, moreBtn,
+      h('p', { class: 'credit' }, 'Dados fornecidos pelo ', h('a', { href: 'https://www.discogs.com', target: '_blank', rel: 'noopener' }, 'Discogs'), '.'));
+    foot.append(h('button', { class: 'btn btn-block', type: 'button', onclick: () => Sheet.push(formView(blankDraft(), 'new')) }, icon('plus', 18), 'Adicionar sem o Discogs'));
+    paint();
+  };
+
+  const autoSearch = debounce(() => {
+    const p = parseQuery(st.q);
+    if (p.kind === 'url') go(true);
+    else if (p.kind === 'barcode' ? (p.value.length === 12 || p.value.length === 13) : st.q.trim().length >= 3) go(true);
+  }, 650);
+
+  async function go(reset) {
+    const q = st.q.trim();
+    if (!q) return;
+    const p = parseQuery(q);
+    if (p.kind === 'url') return openFromUrl(p);
+    if (!DG.token) { st.error = { code: 'notoken' }; st.results = []; st.searched = false; paint(); return; }
+    if (st.ctl) st.ctl.abort();
+    const ctl = st.ctl = new AbortController();
+    if (reset) { st.page = 0; st.pages = 0; st.total = 0; st.results = []; }
+    st.loading = true; st.loadingText = 'Buscando no Discogs…'; st.error = null;
+    paint();
+    const params = p.kind === 'barcode'
+      ? { barcode: p.value, type: 'release' }
+      : { q, type: st.type, format: st.type === 'release' ? ((MEDIUM[st.format] || {}).dg || '') : '' };
+    try {
+      const data = await DG.search({ ...params, per_page: 25, page: st.page + 1 }, ctl.signal);
+      if (ctl !== st.ctl) return;
+      const pg = data.pagination || {};
+      st.page = pg.page || st.page + 1;
+      st.pages = pg.pages || 1;
+      st.total = pg.items != null ? pg.items : (data.results || []).length;
+      st.results = st.results.concat((data.results || []).filter(r => r.type === 'release' || r.type === 'master').map(normResult));
+      st.searched = true; st.lastQ = q; st.kind = p.kind;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      if (ctl === st.ctl) st.error = e;
+    } finally {
+      if (ctl === st.ctl) { st.loading = false; paint(); }
+    }
+  }
+
+  async function openFromUrl(p) {
+    if (st.ctl) st.ctl.abort();
+    const ctl = st.ctl = new AbortController();
+    st.loading = true; st.loadingText = 'Abrindo o link do Discogs…'; st.error = null;
+    paint();
+    try {
+      const info = p.type === 'release' ? await DG.release(p.id) : await DG.master(p.id);
+      if (ctl !== st.ctl) return;
+      st.loading = false;
+      paint();
+      const d = blankDraft();
+      Object.assign(d, {
+        title: info.title, artist: info.artist, year: info.year, country: info.country || '', label: info.label || '',
+        catno: info.catno || '', formatText: info.formatText || '', thumb: info.thumb, cover: info.cover,
+        medium: info.medium || '', mediumDetail: info.mediumDetail || '', discogs: info.discogs,
+      });
+      Sheet.push(formView(d, 'new'));
+    } catch (e) {
+      if (ctl === st.ctl) { st.loading = false; st.error = e; paint(); }
+    }
+  }
+
+  function pick(r) {
+    const d = blankDraft();
+    Object.assign(d, {
+      title: r.title, artist: r.artist, year: r.year, thumb: r.thumb, cover: r.cover,
+      country: r.type === 'release' ? r.country : '', label: r.type === 'release' ? r.label : '',
+      catno: r.type === 'release' ? r.catno : '', formatText: r.type === 'release' ? r.formatText : '',
+      discogs: { type: r.type, releaseId: r.type === 'release' ? r.id : null, masterId: r.masterId, url: r.url },
+    });
+    if (r.type === 'release' && r.medium) { d.medium = r.medium; d.mediumDetail = r.detail; }
+    const fv = formView(d, 'new');
+    Sheet.push(fv);
+    enrichDraft(d, fv);
+  }
+
+  function resultRow(r) {
+    const exact = r.type === 'release' ? ownedFor(r.id, null, null).length > 0 : ownedFor(null, r.masterId, null).length > 0;
+    const sameAlbum = !exact && r.type === 'release' && r.masterId && ownedFor(null, r.masterId, null).length > 0;
+    const meta1 = [r.year, r.country, r.type === 'master' ? 'Álbum · todas as versões' : r.formatText].filter(Boolean).join(' · ');
+    const meta2 = r.type === 'release' ? [r.label, r.catno].filter(Boolean).join(' · ') : '';
+    return h('button', { class: 'res', type: 'button', onclick: () => pick(r) },
+      coverEl({ title: r.title, artist: r.artist, thumb: r.thumb, cover: r.cover, medium: r.medium }, 'thumb'),
+      h('span', { class: 'res-main' },
+        h('span', { class: 'res-t' }, r.title || 'Sem título'),
+        r.artist ? h('span', { class: 'res-a' }, r.artist) : null,
+        meta1 ? h('span', { class: 'res-m' }, meta1) : null,
+        meta2 ? h('span', { class: 'res-m' }, meta2) : null),
+      exact ? h('span', { class: 'owned' }, icon('check', 12), 'No acervo')
+        : sameAlbum ? h('span', { class: 'owned soft', title: 'Outra edição deste álbum já está no acervo' }, 'Álbum no acervo')
+        : h('span', { class: 'res-go' }, icon('next', 18)));
+  }
+
+  function paint() {
+    if (!statusEl) return;
+    statusEl.className = 'status-line';
+    statusEl.replaceChildren();
+    resultsEl.replaceChildren(...st.results.map(resultRow));
+    moreBtn.hidden = !(st.results.length && st.page < st.pages);
+    moreBtn.disabled = st.loading;
+    moreBtn.textContent = st.loading && st.results.length ? 'Carregando…' : 'Mais resultados';
+    if (st.loading && !st.results.length) { statusEl.append(...spinnerLine(st.loadingText)); return; }
+    if (st.error) {
+      statusEl.className = 'status-line error';
+      statusEl.append(errText(st.error));
+      return;
+    }
+    if (!st.searched) return;
+    if (!st.results.length) {
+      statusEl.append(st.kind === 'barcode' ? `Nenhuma edição com o código de barras ${st.lastQ}.` : `Nada encontrado para “${st.lastQ}”.`);
+      if (st.type === 'master' && st.kind === 'text') {
+        statusEl.append(h('button', { class: 'linkbtn', type: 'button', onclick: () => { st.type = 'release'; store.set('stype', 'release'); Sheet.rerender(); go(true); } }, 'Buscar em Edições'));
+      }
+      return;
+    }
+    statusEl.append(`${fmtN(st.results.length)} de ${fmtN(st.total)} ${plural(st.total, 'resultado', 'resultados')}`);
+    if (DG.degraded) statusEl.append(h('span', { class: 'degraded' }, ' · busca sem token: o Discogs não aceitou o token salvo, então não há capas. Gere um novo em Ajustes.'));
+  }
+
+  return v;
+}
+
+/* Completa os dados do álbum com a ficha completa do Discogs, sem sobrescrever o que o usuário editou. */
+async function enrichDraft(draft, view) {
+  const ticket = (draft._ticket = (draft._ticket || 0) + 1);
+  const keys = ['title', 'artist', 'year', 'country', 'label', 'catno', 'formatText', 'thumb', 'cover'];
+  const snap = Object.fromEntries(keys.map(k => [k, draft[k]]));
+  const snapMedium = draft.medium, snapDetail = draft.mediumDetail;
+  let info;
+  try {
+    if (draft.discogs.releaseId) info = await DG.release(draft.discogs.releaseId);
+    else if (draft.discogs.masterId) info = await DG.master(draft.discogs.masterId);
+    else return;
+  } catch (e) { return; }
+  if (draft._ticket !== ticket) return;
+  for (const k of keys) {
+    if (info[k] != null && info[k] !== '' && draft[k] === snap[k]) draft[k] = info[k];
+  }
+  draft.discogs = { ...draft.discogs, masterId: draft.discogs.masterId || info.discogs.masterId || null, url: info.discogs.url || draft.discogs.url };
+  if (info.medium && !draft.medium) draft.medium = info.medium;
+  // o detalhe deduzido da busca (ex.: "LP") vira o completo da ficha (ex.: 'LP 12" 33⅓ RPM'), se ninguém mexeu nele
+  if (info.mediumDetail && info.medium === draft.medium && draft.mediumDetail === snapDetail && (!snapDetail || snapMedium === draft.medium)) {
+    draft.mediumDetail = info.mediumDetail;
+  }
+  if (view && view.refresh) view.refresh();
+}
+
+/* ================= Tela: formulário da digitalização ================= */
+function albumCard(draft) {
+  const el = h('div', { class: 'album' });
+  el.update = () => {
+    const meta = [draft.year, draft.country, [draft.label, draft.catno].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
+    const kind = draft.discogs.type === 'master' && !draft.discogs.releaseId ? 'Álbum · todas as versões' : draft.formatText;
+    el.replaceChildren(
+      coverEl(draft, 'large'),
+      h('div', { class: 'album-info' },
+        h('p', { class: 'album-t' }, draft.title || 'Sem título'),
+        h('p', { class: 'album-a' }, draft.artist || 'Artista não informado'),
+        meta ? h('p', { class: 'album-m' }, meta) : null,
+        kind ? h('p', { class: 'album-m' }, kind) : null,
+        draft.discogs.url ? h('a', { class: 'album-link', href: draft.discogs.url, target: '_blank', rel: 'noopener' }, 'Ver no Discogs', icon('external', 14)) : null));
+  };
+  el.update();
+  return el;
+}
+
+function ownedNote(draft) {
+  const others = ownedFor(draft.discogs.releaseId, draft.discogs.masterId, draft.id);
+  if (!others.length) return null;
+  return h('div', { class: 'note' },
+    h('strong', null, others.length === 1 ? 'Este álbum já está no acervo:' : `Este álbum já está no acervo ${others.length} vezes:`),
+    ...others.slice(0, 4).map(o => h('div', { class: 'owned-line' }, mtag(o.medium), pill(o.status), o.date ? h('span', { class: 'date' }, fmtDate(o.date)) : null,
+      o.discogs.releaseId && o.discogs.releaseId !== draft.discogs.releaseId && (o.label || o.country) ? h('span', { class: 'date' }, [o.label, o.catno, o.country].filter(Boolean).join(' ')) : null)));
+}
+
+function editionBlock(draft, formV) {
+  if (!draft.discogs.masterId) return null;
+  const masterOnly = !draft.discogs.releaseId;
+  const desc = [[draft.label, draft.catno].filter(Boolean).join(' '), draft.country, draft.year].filter(Boolean).join(' · ');
+  return h('div', { class: 'edition' },
+    h('div', { class: 'edition-text' },
+      h('div', { class: 'lbl' }, 'Edição (prensagem)'),
+      masterOnly ? h('div', { class: 'edition-none' }, 'Ainda não definida. Escolha país, selo e nº de catálogo do exemplar que você digitalizou.')
+        : h('div', { class: 'edition-val' }, desc || `Release ${draft.discogs.releaseId}`)),
+    h('button', { class: 'btn', type: 'button', onclick: () => Sheet.push(versionsView(draft, formV)) }, icon('layers', 18), masterOnly ? 'Escolher' : 'Trocar'));
+}
+
+function albumFields(draft, onChange) {
+  const manual = !draft.discogs.releaseId && !draft.discogs.masterId;
+  const inputs = {};
+  const field = (id, label, key, extra = {}) => {
+    const inp = h('input', { class: 'inp', id, value: draft[key] == null ? '' : draft[key], autocomplete: 'off', ...extra });
+    inp.addEventListener('input', () => {
+      draft[key] = key === 'year' ? (parseInt(inp.value, 10) || null) : inp.value;
+      if (key === 'title' && inp.value.trim()) titleErr.hidden = true;
+      onChange();
+    });
+    inputs[key] = inp;
+    return h('div', { class: 'field' }, h('label', { class: 'lbl', for: id }, label), inp);
+  };
+  const titleErr = h('p', { class: 'err', hidden: true }, 'Informe o título do álbum.');
+  const titleField = field('a-title', 'Título', 'title');
+  titleField.append(titleErr);
+  const det = h('details', { class: 'albumdata' + (manual ? ' first' : ''), open: manual || null },
+    h('summary', null, icon('chevron', 18), manual ? 'Dados do álbum' : 'Editar dados do álbum'),
+    h('div', { class: 'albumdata-body' },
+      titleField,
+      field('a-artist', 'Artista', 'artist'),
+      h('div', { class: 'two' }, field('a-year', 'Ano', 'year', { inputmode: 'numeric', maxlength: '4' }), field('a-country', 'País', 'country')),
+      h('div', { class: 'two' }, field('a-label', 'Selo', 'label'), field('a-catno', 'Nº de catálogo', 'catno', { autocapitalize: 'characters' })),
+      field('a-format', 'Formato no Discogs', 'formatText')));
+  return {
+    el: det,
+    manual,
+    showTitleError() { det.open = true; titleErr.hidden = false; inputs.title.focus(); },
+    sync() {
+      for (const [k, inp] of Object.entries(inputs)) {
+        if (document.activeElement !== inp) inp.value = draft[k] == null ? '' : draft[k];
+      }
+    },
+  };
+}
+
+function formView(draft, mode) {
+  const v = { title: mode === 'edit' ? 'Editar digitalização' : 'Nova digitalização', dirty: false };
+  const parts = {};
+  const touch = () => { v.dirty = true; };
+
+  v.refresh = () => {
+    if (Sheet.top !== v || !parts.card) return;
+    parts.card.update();
+    const o = ownedNote(draft) || h('div', { hidden: true });
+    parts.owned.replaceWith(o); parts.owned = o;
+    const e = editionBlock(draft, v) || h('div', { hidden: true });
+    parts.edition.replaceWith(e); parts.edition = e;
+    parts.medInputs.forEach(inp => { inp.checked = inp.value === draft.medium; });
+    if (document.activeElement !== parts.detail.input) parts.detail.input.value = draft.mediumDetail || '';
+    parts.detail.update(); parts.fmt.update(); parts.equip.update();
+    parts.album.sync();
+  };
+
+  v.render = (body, foot) => {
+    parts.album = albumFields(draft, () => { parts.card.update(); touch(); });
+    parts.card = albumCard(draft);
+    parts.owned = ownedNote(draft) || h('div', { hidden: true });
+    parts.edition = editionBlock(draft, v) || h('div', { hidden: true });
+
+    // mídia de origem
+    const medErr = h('p', { class: 'err', hidden: true }, 'Escolha a mídia de origem.');
+    const medChoices = MEDIA.map(m => choice('medium', m.id, [icon(m.icon, 18), m.label], draft.medium === m.id, val => {
+      draft.medium = val; medErr.hidden = true; touch();
+      parts.detail.update(); parts.fmt.update(); parts.equip.update();
+    }));
+    parts.medInputs = medChoices.map(l => l.querySelector('input'));
+    const medField = h('div', { class: 'field', role: 'radiogroup', 'aria-labelledby': 'lbl-medium' },
+      h('div', { class: 'lbl', id: 'lbl-medium' }, 'Mídia de origem'), h('div', { class: 'choices' }, medChoices), medErr);
+
+    parts.detail = sugField(draft, {
+      id: 'f-detail', label: 'Detalhe da mídia', key: 'mediumDetail', onInput: touch,
+      placeholder: () => ((MEDIUM[draft.medium] || {}).details || ['LP 12" 33⅓ RPM'])[0],
+      sugs: () => uniq([...((MEDIUM[draft.medium] || {}).details || []), ...history('mediumDetail', draft.medium)]),
+    });
+
+    // status e data
+    const dateInp = h('input', { class: 'inp', type: 'date', id: 'f-date', value: draft.date || '' });
+    dateInp.addEventListener('input', () => { draft.date = dateInp.value; touch(); });
+    const stField = h('div', { class: 'field', role: 'radiogroup', 'aria-labelledby': 'lbl-status' },
+      h('div', { class: 'lbl', id: 'lbl-status' }, 'Status'),
+      h('div', { class: 'choices' }, STATUS.map(s => choice('status', s.id, s.label, draft.status === s.id, val => {
+        draft.status = val; touch();
+        if (val === 'concluido' && !draft.date) { draft.date = todayISO(); dateInp.value = draft.date; }
+      }, 'status st-' + s.id))));
+    const dateField = h('div', { class: 'field' },
+      h('label', { class: 'lbl', for: 'f-date' }, 'Data da digitalização'),
+      h('div', { class: 'inline-form' }, dateInp,
+        h('button', { class: 'btn', type: 'button', onclick: () => { draft.date = todayISO(); dateInp.value = draft.date; touch(); } }, 'Hoje')));
+
+    parts.fmt = sugField(draft, {
+      id: 'f-format', label: 'Formato do arquivo', key: 'fileFormat', onInput: touch,
+      placeholder: () => ((MEDIUM[draft.medium] || {}).formats || ['FLAC 24-bit/96 kHz'])[0],
+      sugs: () => uniq([...history('fileFormat', draft.medium), ...((MEDIUM[draft.medium] || {}).formats || [])]),
+    });
+    parts.equip = sugField(draft, {
+      id: 'f-equip', label: 'Equipamento', key: 'equipment', onInput: touch,
+      placeholder: () => (MEDIUM[draft.medium] || {}).equip || 'Equipamento usado na captura',
+      sugs: () => history('equipment', draft.medium),
+    });
+    const gradeSel = h('select', { class: 'inp', id: 'f-grade' }, GRADES.map(([val, lab]) => h('option', { value: val, selected: draft.grade === val || null }, lab)));
+    gradeSel.addEventListener('change', () => { draft.grade = gradeSel.value; touch(); });
+    const gradeField = h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'f-grade' }, 'Estado da mídia'), selwrap(gradeSel));
+    const loc = sugField(draft, {
+      id: 'f-loc', label: 'Onde está o arquivo', key: 'location', onInput: touch,
+      placeholder: 'HD externo, NAS, pasta…', sugs: () => history('location'),
+    });
+    const notes = h('textarea', { class: 'inp', id: 'f-notes', rows: '3', placeholder: 'Cliques, faixas com problema, ajuste de velocidade, restauração…' }, draft.notes || '');
+    notes.addEventListener('input', () => { draft.notes = notes.value; touch(); });
+    const notesField = h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'f-notes' }, 'Notas'), notes);
+
+    if (parts.album.manual) body.append(parts.album.el);
+    else body.append(parts.card, parts.owned, parts.edition);
+    body.append(medField, parts.detail.el, stField, dateField, parts.fmt.el, parts.equip.el, gradeField, loc.el, notesField);
+    if (!parts.album.manual) body.append(parts.album.el);
+    if (mode === 'edit') {
+      body.append(h('div', { class: 'danger' },
+        h('button', { class: 'btn', type: 'button', onclick: () => duplicate(draft, validate) }, icon('copy', 18), 'Duplicar para outra mídia'),
+        h('button', { class: 'btn btn-danger', type: 'button', onclick: () => removeItem(draft.id) }, icon('trash', 18), 'Excluir')));
+    }
+
+    const saveBtn = h('button', {
+      class: 'btn btn-primary btn-block', type: 'button',
+      onclick: async () => {
+        if (!validate()) return;
+        saveBtn.disabled = true;
+        try {
+          await saveDraft(draft);
+          Sheet.close();
+          toast(mode === 'edit' ? 'Alterações salvas' : 'Salvo no acervo');
+        } catch (e) {
+          saveBtn.disabled = false;
+          toast('Não deu para salvar: ' + ((e && e.message) || 'erro no armazenamento do navegador'));
+        }
+      },
+    }, mode === 'edit' ? 'Salvar alterações' : 'Salvar no acervo');
+    foot.append(saveBtn);
+
+    function validate() {
+      if (!String(draft.title || '').trim()) { parts.album.showTitleError(); return false; }
+      if (!draft.medium) { medErr.hidden = false; medField.scrollIntoView({ block: 'center', behavior: 'smooth' }); return false; }
+      return true;
+    }
+  };
+  return v;
+}
+
+async function saveDraft(draft) {
+  const now = new Date().toISOString();
+  const item = normalizeItem({ ...draft, id: draft.id || uid(), createdAt: draft.createdAt || now, updatedAt: now });
+  await DB.put(item);
+  const i = S.items.findIndex(x => x.id === item.id);
+  if (i >= 0) S.items[i] = item; else S.items.push(item);
+  draft.id = item.id;
+  draft.createdAt = item.createdAt;
+  render();
+  ensurePersist();
+  return item;
+}
+
+async function duplicate(draft, validate) {
+  if (!validate()) return;
+  await saveDraft(draft);
+  const d = blankDraft();
+  for (const k of ['title', 'artist', 'year', 'country', 'label', 'catno', 'formatText', 'thumb', 'cover']) d[k] = draft[k];
+  d.discogs = { ...draft.discogs };
+  d.status = 'fila';
+  Sheet.replace(formView(d, 'new'));
+  toast('Original salvo. Agora escolha a outra mídia.');
+}
+
+async function removeItem(id) {
+  const it = S.items.find(x => x.id === id);
+  if (!it) { Sheet.close(); return; }
+  await DB.del(id);
+  S.items = S.items.filter(x => x.id !== id);
+  render();
+  Sheet.close();
+  toast('Digitalização excluída', {
+    action: 'Desfazer', duration: 7000,
+    onAction: async () => { await DB.put(it); S.items.push(it); render(); toast('Digitalização restaurada'); },
+  });
+}
+
+function openEdit(id) {
+  const it = S.items.find(x => x.id === id);
+  if (it) Sheet.show(formView(clone(it), 'edit'));
+}
+
+/* ================= Tela: escolher prensagem ================= */
+function versionsView(draft, formV) {
+  const st = { format: (MEDIUM[draft.medium] || {}).dg ? draft.medium : '', country: '', list: [], page: 0, pages: 0, total: 0, loading: false, error: null, countries: null, ctl: null };
+  const v = { title: 'Escolher prensagem' };
+  let statusEl, listEl, moreBtn, countrySel;
+
+  v.render = body => {
+    countrySel = h('select', { class: 'inp', id: 'ver-country', onchange: () => { st.country = countrySel.value; load(true); } });
+    statusEl = h('div', { class: 'status-line', role: 'status', 'aria-live': 'polite' });
+    listEl = h('div', { class: 'results' });
+    moreBtn = h('button', { class: 'btn btn-block', type: 'button', hidden: true, onclick: () => load(false) }, 'Mais edições');
+    body.append(
+      h('p', { class: 'hint' }, h('strong', null, draft.title || 'Álbum'), draft.artist ? ` · ${draft.artist}` : ''),
+      chipsRow([['', 'Todos os formatos'], ...MEDIA.filter(m => m.dg).map(m => [m.id, m.label, m.icon])], st.format, val => { st.format = val; st.country = ''; st.countries = null; load(true); }, 'Formato'),
+      h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'ver-country' }, 'País'), selwrap(countrySel)),
+      statusEl, listEl, moreBtn);
+    paint();
+    if (!st.page && !st.loading && !st.error) load(true);
+  };
+
+  function facetCountries(data) {
+    const ff = (Array.isArray(data.filter_facets) ? data.filter_facets : []).find(f => f.id === 'country');
+    if (ff && Array.isArray(ff.values)) return ff.values.map(x => ({ value: x.value, label: x.title || x.value, count: x.count }));
+    const av = data.filters && data.filters.available && data.filters.available.country;
+    if (av && typeof av === 'object') return Object.entries(av).map(([k, c]) => ({ value: k, label: k, count: c }));
+    return null;
+  }
+
+  async function load(reset) {
+    if (st.ctl) st.ctl.abort();
+    const ctl = st.ctl = new AbortController();
+    if (reset) { st.page = 0; st.pages = 0; st.list = []; }
+    st.loading = true; st.error = null;
+    paint();
+    try {
+      const data = await DG.versions(draft.discogs.masterId, { page: st.page + 1, format: (MEDIUM[st.format] || {}).dg || '', country: st.country }, ctl.signal);
+      if (ctl !== st.ctl) return;
+      const pg = data.pagination || {};
+      st.page = pg.page || st.page + 1;
+      st.pages = pg.pages || 1;
+      st.total = pg.items != null ? pg.items : st.list.length;
+      st.list = st.list.concat(Array.isArray(data.versions) ? data.versions : []);
+      if (!st.country) st.countries = facetCountries(data) || st.countries;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      if (ctl === st.ctl) st.error = e;
+    } finally {
+      if (ctl === st.ctl) { st.loading = false; paint(); }
+    }
+  }
+
+  function paintCountries() {
+    let opts = st.countries;
+    if (!opts) {
+      const c = {};
+      st.list.forEach(x => { if (x.country) c[x.country] = (c[x.country] || 0) + 1; });
+      opts = Object.entries(c).map(([k, n]) => ({ value: k, label: k, count: n }));
+    }
+    opts = opts.slice().sort((a, b) => (b.count || 0) - (a.count || 0) || collator.compare(a.label, b.label));
+    countrySel.replaceChildren(
+      h('option', { value: '' }, 'Todos os países'),
+      ...opts.map(o => h('option', { value: o.value, selected: o.value === st.country || null }, o.count ? `${o.label} (${fmtN(o.count)})` : o.label)));
+    if (st.country && !opts.some(o => o.value === st.country)) countrySel.append(h('option', { value: st.country, selected: true }, st.country));
+  }
+
+  function verRow(ver) {
+    const own = ownedFor(ver.id, null, draft.id).length > 0;
+    const fmt = [...(ver.major_formats || []), ver.format].filter(Boolean).join(', ');
+    const labelLine = [cleanName(ver.label), ver.catno && String(ver.catno).toLowerCase() !== 'none' ? ver.catno : ''].filter(Boolean).join(' · ');
+    const place = [ver.country, ver.released].filter(Boolean).join(' · ');
+    const inf = fromFormatList([...(ver.major_formats || []), ...String(ver.format || '').split(',')]);
+    return h('button', { class: 'res', type: 'button', onclick: () => pick(ver) },
+      coverEl({ title: draft.title, artist: draft.artist, thumb: goodImg(ver.thumb), medium: inf.medium || draft.medium }, 'thumb'),
+      h('span', { class: 'res-main' },
+        h('span', { class: 'res-t' }, fmt || ver.title || 'Edição'),
+        labelLine ? h('span', { class: 'res-m' }, labelLine) : null,
+        place ? h('span', { class: 'res-m' }, place) : null),
+      own ? h('span', { class: 'owned' }, icon('check', 12), 'No acervo') : h('span', { class: 'res-go' }, icon('next', 18)));
+  }
+
+  function pick(ver) {
+    draft.discogs = { type: 'release', releaseId: ver.id, masterId: draft.discogs.masterId, url: `https://www.discogs.com/release/${ver.id}` };
+    draft.label = cleanName(ver.label || '');
+    draft.catno = ver.catno && String(ver.catno).toLowerCase() !== 'none' ? String(ver.catno) : '';
+    draft.country = ver.country || '';
+    const y = parseInt(ver.released, 10);
+    if (y) draft.year = y;
+    draft.formatText = [...(ver.major_formats || []), ver.format].filter(Boolean).join(', ');
+    if (goodImg(ver.thumb)) draft.thumb = ver.thumb;
+    const inf = fromFormatList([...(ver.major_formats || []), ...String(ver.format || '').split(',')]);
+    if (!draft.medium && inf.medium) draft.medium = inf.medium;
+    if (!draft.mediumDetail && inf.medium && inf.medium === draft.medium) draft.mediumDetail = inf.detail;
+    formV.dirty = true;
+    Sheet.back();
+    enrichDraft(draft, formV);
+  }
+
+  function paint() {
+    if (!statusEl) return;
+    paintCountries();
+    statusEl.className = 'status-line';
+    statusEl.replaceChildren();
+    listEl.replaceChildren(...st.list.map(verRow));
+    moreBtn.hidden = !(st.list.length && st.page < st.pages);
+    moreBtn.disabled = st.loading;
+    moreBtn.textContent = st.loading && st.list.length ? 'Carregando…' : 'Mais edições';
+    if (st.loading && !st.list.length) { statusEl.append(...spinnerLine('Carregando edições do Discogs…')); return; }
+    if (st.error) { statusEl.className = 'status-line error'; statusEl.append(errText(st.error)); return; }
+    if (!st.list.length) { statusEl.append('Nenhuma edição com esses filtros.'); return; }
+    statusEl.append(`${fmtN(st.list.length)} de ${fmtN(st.total)} ${plural(st.total, 'edição', 'edições')}`);
+  }
+
+  return v;
+}
+
+/* ================= Tela: ajustes, backup ================= */
+function section(title, ic, ...children) {
+  return h('section', { class: 'sect' }, h('h3', null, icon(ic, 18), title), ...children);
+}
+
+function settingsView() {
+  const v = { title: 'Ajustes' };
+  v.render = body => {
+    const user = store.get('dg_user');
+    const tok = h('input', { class: 'inp', id: 'set-token', type: 'password', value: DG.token, placeholder: 'Cole o token pessoal', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
+    const msg = h('p', { class: 'msg', role: 'status' },
+      DG.token ? (user ? `Conectado como @${user}.` : 'Token salvo neste aparelho.') : 'Sem token: a busca por nome fica desligada (links do Discogs funcionam).');
+    const saveBtn = h('button', { class: 'btn btn-primary', type: 'submit' }, 'Salvar e testar');
+    const form = h('form', {
+      class: 'stack',
+      onsubmit: async e => {
+        e.preventDefault();
+        const t = tok.value.trim();
+        if (!t) { msg.textContent = 'Cole o token antes de salvar.'; return; }
+        saveBtn.disabled = true;
+        msg.replaceChildren(...spinnerLine('Testando com o Discogs…'));
+        const r = await testToken(t);
+        saveBtn.disabled = false;
+        if (r.ok) { Sheet.rerender(); toast(r.message); } else msg.textContent = r.message;
+      },
+    },
+    h('div', { class: 'field' },
+      h('label', { class: 'lbl', for: 'set-token' }, 'Token pessoal do Discogs'),
+      h('div', { class: 'inline-form' }, tok,
+        h('button', { class: 'icon-btn bordered', type: 'button', 'aria-label': 'Mostrar ou ocultar o token', onclick: () => { tok.type = tok.type === 'password' ? 'text' : 'password'; } }, icon('eye')))),
+    msg,
+    h('div', { class: 'btnrow' }, saveBtn,
+      DG.token ? h('button', { class: 'btn', type: 'button', onclick: () => { DG.setToken(''); store.set('dg_user', null); render(); Sheet.rerender(); toast('Token removido deste aparelho'); } }, 'Remover token') : null),
+    h('p', { class: 'fine' }, 'Gere o token em ', h('a', { href: 'https://www.discogs.com/settings/developers', target: '_blank', rel: 'noopener' }, 'Discogs → Configurações → Desenvolvedores'), '. Ele fica salvo só neste aparelho e vai apenas para o Discogs.'));
+    body.append(section('Discogs', 'key', form));
+
+    const n = S.items.length;
+    const last = store.get('last_export');
+    // sem "accept": no iPhone ele às vezes deixa arquivos .json cinza no seletor; o conteúdo é validado na importação
+    const fileIn = h('input', { type: 'file', hidden: true, id: 'import-file' });
+    fileIn.addEventListener('change', async () => {
+      const f = fileIn.files && fileIn.files[0];
+      fileIn.value = '';
+      if (f) { await importFile(f); Sheet.rerender(); }
+    });
+    body.append(section('Backup', 'download',
+      h('p', null, `${n ? `Seus ${fmtN(n)} ${plural(n, 'item fica salvo', 'itens ficam salvos')}` : 'Os dados ficam salvos'} só neste aparelho. Exporte um backup de vez em quando. Para levar o acervo a outro aparelho, importe o arquivo lá.`),
+      h('p', { class: 'msg' }, last ? `Último backup: ${fmtDay(last)}.` : 'Nenhum backup exportado ainda.'),
+      h('div', { class: 'btnrow' },
+        h('button', { class: 'btn btn-primary', type: 'button', disabled: !n || null, onclick: async () => { await exportJSON(); Sheet.rerender(); } }, icon('download', 18), 'Exportar backup'),
+        h('button', { class: 'btn', type: 'button', disabled: !n || null, onclick: exportCSV }, 'Exportar planilha (CSV)'),
+        h('button', { class: 'btn', type: 'button', onclick: () => fileIn.click() }, icon('upload', 18), 'Importar backup')),
+      fileIn,
+      h('p', { class: 'fine' }, 'A importação junta os itens: o que não existe aqui é adicionado, e o que existe nos dois lados fica com a versão editada por último.')));
+
+    if (!isStandalone()) {
+      body.append(section('Usar como app', 'phone',
+        h('p', null, 'No iPhone, abra este endereço no Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”. O Acervo passa a abrir em tela cheia, com ícone próprio, e funciona sem internet para consultar o acervo.'),
+        h('p', null, 'O app da tela de início guarda os dados separado do Safari. Cadastre por ele (e cole o token lá também); se já cadastrou algo no Safari, exporte o backup aqui e importe no app.'),
+        h('p', null, 'No computador, o Chrome e o Edge mostram um botão de instalar na barra de endereço.')));
+    }
+
+    const persist = h('span', null, 'verificando…');
+    if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p => { persist.textContent = p ? 'sim' : 'não'; }).catch(() => { persist.textContent = 'indisponível'; });
+    else persist.textContent = 'indisponível';
+    body.append(section('Sobre', 'info',
+      h('p', null, `Acervo ${VERSION}. Dados de discos fornecidos pelo `, h('a', { href: 'https://www.discogs.com', target: '_blank', rel: 'noopener' }, 'Discogs'), '.'),
+      h('p', { class: 'fine' }, 'Protegido contra limpeza automática do navegador: ', persist, '.')));
+  };
+  return v;
+}
+
+async function ensurePersist() {
+  try {
+    if (navigator.storage && navigator.storage.persisted && !(await navigator.storage.persisted())) await navigator.storage.persist();
+  } catch (e) { /* sem suporte */ }
+}
+
+async function saveFile(blob, name) {
+  if (isIOS() && navigator.canShare && typeof File === 'function') {
+    try {
+      const file = new File([blob], name, { type: blob.type });
+      if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return true; }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return false;
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = h('a', { href: url, download: name, hidden: true });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 15000);
+  return true;
+}
+
+function byCreated(a, b) { return (a.createdAt || '').localeCompare(b.createdAt || ''); }
+
+async function exportJSON() {
+  const items = S.items.slice().sort(byCreated);
+  const data = { app: 'acervo', schema: 1, version: VERSION, exportedAt: new Date().toISOString(), count: items.length, items };
+  const ok = await saveFile(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `acervo-backup-${todayISO()}.json`);
+  if (ok) { store.set('last_export', new Date().toISOString()); toast('Backup exportado'); renderNudge(); }
+}
+
+function exportCSV() {
+  const cols = [
+    ['Artista', it => it.artist], ['Título', it => it.title], ['Ano', it => it.year || ''], ['País', it => it.country],
+    ['Selo', it => it.label], ['Nº de catálogo', it => it.catno], ['Formato no Discogs', it => it.formatText],
+    ['Mídia', it => (MEDIUM[it.medium] || MEDIUM.outro).label], ['Detalhe da mídia', it => it.mediumDetail],
+    ['Status', it => statusLabel(it.status)], ['Data da digitalização', it => fmtDate(it.date)],
+    ['Formato do arquivo', it => it.fileFormat], ['Equipamento', it => it.equipment], ['Estado da mídia', it => it.grade],
+    ['Onde está o arquivo', it => it.location], ['Notas', it => it.notes], ['Link do Discogs', it => it.discogs.url],
+    ['Release ID', it => it.discogs.releaseId || ''], ['Master ID', it => it.discogs.masterId || ''],
+    ['Criado em', it => it.createdAt], ['Atualizado em', it => it.updatedAt],
+  ];
+  const esc = val => {
+    let s = val == null ? '' : String(val);
+    if (/^[=+@]/.test(s)) s = "'" + s;
+    return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const items = S.items.slice().sort((a, b) => collator.compare(a.artist, b.artist) || collator.compare(a.title, b.title));
+  const lines = [cols.map(c => c[0]).join(';'), ...items.map(it => cols.map(c => esc(c[1](it))).join(';'))];
+  saveFile(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv' }), `acervo-${todayISO()}.csv`).then(ok => { if (ok) toast('Planilha exportada'); });
+}
+
+async function importFile(file) {
+  let data;
+  try { data = JSON.parse(await file.text()); } catch (e) { toast('Esse arquivo não é um backup do Acervo (não consegui ler o JSON).'); return; }
+  const arr = Array.isArray(data) ? data : data && Array.isArray(data.items) ? data.items : null;
+  if (!arr) { toast('Esse arquivo não tem itens do Acervo.'); return; }
+  const map = new Map(S.items.map(i => [i.id, i]));
+  const toPut = [];
+  let added = 0, updated = 0, kept = 0;
+  for (const raw of arr) {
+    if (!raw || typeof raw !== 'object') continue;
+    const it = normalizeItem(raw);
+    if (!it.title) continue;
+    const cur = map.get(it.id);
+    if (!cur) { added++; toPut.push(it); map.set(it.id, it); }
+    else if ((it.updatedAt || '') > (cur.updatedAt || '')) { updated++; toPut.push(it); map.set(it.id, it); }
+    else kept++;
+  }
+  try { await DB.putMany(toPut); } catch (e) { toast('Não deu para gravar a importação neste navegador.'); return; }
+  S.items = [...map.values()];
+  render();
+  ensurePersist();
+  toast(`Importação: ${fmtN(added)} ${plural(added, 'novo', 'novos')}, ${fmtN(updated)} ${plural(updated, 'atualizado', 'atualizados')}${kept ? `, ${fmtN(kept)} já em dia` : ''}.`, { duration: 6000 });
+}
+
+/* ================= Início ================= */
+function openAdd() { Sheet.show(searchView()); }
+function openSettings() { Sheet.show(settingsView()); }
+function setView(view) {
+  S.view = view;
+  store.set('view', view);
+  $('#view-list').setAttribute('aria-pressed', String(view === 'list'));
+  $('#view-grid').setAttribute('aria-pressed', String(view === 'grid'));
+  render();
+}
+
+async function init() {
+  $('#btn-settings').addEventListener('click', openSettings);
+  $('#fab').addEventListener('click', openAdd);
+  const fq = $('#filter-q');
+  fq.addEventListener('input', debounce(() => { S.q = fq.value; render(); }, 120));
+  const sortSel = $('#sort');
+  sortSel.value = S.sort;
+  if (sortSel.value !== S.sort) { S.sort = 'recent'; sortSel.value = 'recent'; }
+  sortSel.addEventListener('change', () => { S.sort = sortSel.value; store.set('sort', S.sort); render(); });
+  $('#view-list').addEventListener('click', () => setView('list'));
+  $('#view-grid').addEventListener('click', () => setView('grid'));
+  $('#view-list').setAttribute('aria-pressed', String(S.view === 'list'));
+  $('#view-grid').setAttribute('aria-pressed', String(S.view === 'grid'));
+  $('#clear-filters').addEventListener('click', () => { S.q = ''; fq.value = ''; S.medium = ''; S.status = ''; render(); });
+  $('#sheet-close').addEventListener('click', () => Sheet.requestClose());
+  $('#sheet-back').addEventListener('click', () => Sheet.back());
+  document.addEventListener('keydown', onKey);
+
+  await DB.open();
+  $('#storage-warn').hidden = !DB.mem;
+  try {
+    S.items = (await DB.all()).map(normalizeItem);
+  } catch (e) {
+    S.items = [];
+  }
+  render();
+
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* offline indisponível */ });
+  }
+}
+
+init();
+})();
+</script>
+</body>
+</html>
