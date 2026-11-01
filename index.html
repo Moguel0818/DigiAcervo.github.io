@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Acervo</title>
-<meta name="description" content="Tracker pessoal de digitalizações de LPs, CDs, DVDs e fitas, com busca no Discogs.">
+<meta name="description" content="Tracker pessoal de digitalizações (LPs, CDs, DVDs, fitas) com busca no Discogs e de BDRemuxes com capas do TMDb.">
 <meta name="theme-color" content="#1C2A35" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141C23" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
@@ -139,7 +139,20 @@ svg { flex: none; }
   padding-top: env(safe-area-inset-top, 0px);
   border-bottom: 3px solid var(--redline);
 }
-.top-row { display: flex; align-items: center; gap: 12px; padding-block: 12px; }
+.top-row { display: flex; align-items: center; gap: 12px; padding-block: 12px 2px; }
+
+/* Abas (Digitalizações | Remuxes), apoiadas na linha vermelha */
+.tabs { display: flex; gap: 2px; }
+.tab {
+  position: relative; flex: none; display: inline-flex; align-items: baseline; gap: 7px;
+  min-height: 44px; padding: 11px 10px 12px; border: 0; border-radius: 8px 8px 0 0;
+  background: transparent; color: var(--label-ink-2); font-weight: 650; font-size: .95rem;
+}
+.tab:first-child { margin-left: -10px; }
+.tab:hover { color: var(--label-ink); background: var(--label-hover); }
+.tab .c { font-family: var(--font-mono); font-size: .78rem; font-weight: 400; font-variant-numeric: tabular-nums; }
+.tab[aria-selected="true"] { color: var(--label-ink); }
+.tab[aria-selected="true"]::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -3px; height: 3px; background: var(--label-ink); }
 .brand { flex: 1; min-width: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; }
 .wordmark {
   margin: 0; font-family: var(--font-display); font-weight: 850; font-stretch: 125%;
@@ -338,6 +351,7 @@ input[type="date"].inp { min-width: 0; }
 .sheet-body {
   flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
   display: grid; align-content: start; gap: 20px;
+  grid-auto-rows: max-content; /* blocos com overflow (ex.: cabeçalho do remux) não encolhem quando a folha rola */
   padding: 18px var(--gr) 28px var(--gl);
 }
 .sheet-foot {
@@ -463,10 +477,82 @@ details.albumdata[open] > summary svg { transform: none; }
 .toast span { min-width: 0; }
 .toast button { border: 0; background: transparent; color: inherit; font-weight: 700; text-decoration: underline; padding: 6px 8px; flex: none; }
 
+/* Remuxes: pôsteres 2:3, fundos 16:9 */
+.cover.poster { aspect-ratio: 2 / 3; }
+.cover.wide { aspect-ratio: 16 / 9; }
+.row.rrow { grid-template-columns: 56px minmax(0, 1fr); contain-intrinsic-size: auto 110px; }
+.ltag {
+  display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 4px; white-space: nowrap;
+  font-family: var(--font-mono); font-size: .74rem; font-weight: 700; letter-spacing: .03em;
+  background: var(--accent-soft); color: var(--accent);
+}
+.cover .tl { position: absolute; top: 6px; left: 6px; background: rgb(10 15 20 / .74); color: #fff; }
+
+/* Cabeçalho do remux, no estilo da página de um filme no Jellyfin */
+.hero { position: relative; overflow: hidden; border-radius: 14px; background: var(--label); color: var(--label-ink); }
+.hero-bg { position: absolute; inset: 0; }
+.hero-bg img { width: 100%; height: 100%; object-fit: cover; }
+.hero-bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(10 15 20 / .15) 0%, rgb(10 15 20 / .55) 45%, rgb(10 15 20 / .92) 100%); }
+.hero-main { position: relative; display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: 14px; align-items: end; padding: 14px; }
+.hero.has-bg .hero-main { padding-top: 92px; }
+.hero-poster { position: relative; display: block; padding: 0; border: 0; border-radius: 6px; overflow: hidden; background: none; box-shadow: 0 6px 18px rgb(0 0 0 / .4); }
+.hero-poster .cover { border-radius: 0; }
+.hero-edit { position: absolute; right: 6px; bottom: 6px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: rgb(10 15 20 / .72); color: #fff; }
+.hero-info { min-width: 0; display: grid; gap: 4px; }
+.hero-t { font-family: var(--font-display); font-weight: 780; font-stretch: 106%; font-size: 1.22rem; line-height: 1.15; overflow-wrap: anywhere; text-wrap: balance; }
+.hero-m { font-family: var(--font-mono); font-size: .84rem; color: var(--label-ink-2); overflow-wrap: anywhere; }
+.hero.has-bg .hero-m { color: rgb(238 242 244 / .82); }
+.hero-links { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .88rem; }
+.hero-links a, .hero-links .linkbtn { color: var(--label-ink); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+.hero-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.hero-btns .btn { min-height: 38px; padding: 0 12px; font-size: .88rem; background: rgb(255 255 255 / .12); border-color: rgb(255 255 255 / .22); color: var(--label-ink); }
+.hero-btns .btn:hover { background: rgb(255 255 255 / .2); border-color: rgb(255 255 255 / .35); }
+
+/* Faixas de áudio e legendas */
+.tracks { display: grid; gap: 8px; }
+.track { display: flex; align-items: stretch; min-width: 0; border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.track-main { flex: 1; min-width: 0; display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 11px 12px; border: 0; background: transparent; color: inherit; text-align: left; }
+.track-main:hover .track-t { color: var(--accent); }
+.track-n { font-family: var(--font-mono); font-size: .8rem; color: var(--ink-3); line-height: 1.7; min-width: 1ch; }
+.track-main .ltag { margin-top: 2px; }
+.track-text { min-width: 0; display: grid; gap: 2px; }
+.track-t { font-weight: 640; line-height: 1.3; overflow-wrap: anywhere; }
+.track-m { font-family: var(--font-mono); font-size: .8rem; color: var(--ink-3); overflow-wrap: anywhere; }
+.flag { display: inline-block; margin-left: 8px; padding: 0 6px; border-radius: 4px; vertical-align: 2px; font-family: var(--font-mono); font-size: .7rem; font-weight: 400; letter-spacing: .03em; text-transform: uppercase; color: var(--st-concluido); background: var(--st-concluido-bg); }
+.track-move { display: flex; flex-direction: column; flex: none; border-left: 1px solid var(--rule); }
+.track-move button { flex: 1; width: 42px; min-height: 30px; border: 0; background: transparent; color: var(--ink-2); display: grid; place-items: center; }
+.track-move button + button { border-top: 1px solid var(--rule); }
+.track-move button:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
+.track-move button:disabled { opacity: .3; cursor: default; }
+.addtrack { justify-self: start; }
+.check { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; font-size: .93rem; color: var(--ink-2); cursor: pointer; user-select: none; }
+.check input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); flex: none; }
+
+/* Seletor de imagens (fonte, tipo, idiomas), como o "Buscar imagens" do Jellyfin */
+.imgtools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; }
+.imgtools .field { flex: 1 1 150px; }
+.imgcount { min-height: 44px; display: inline-flex; align-items: center; font-family: var(--font-mono); font-size: .82rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.status-stack { display: grid; gap: 6px; }
+.status-stack:empty, .imggrid:empty { display: none; }
+.imggrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+.imggrid.wide { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.imgcard { position: relative; display: grid; align-content: start; padding: 0; border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; background: var(--surface); color: inherit; text-align: center; box-shadow: var(--shadow-1); }
+.imgcard:hover { border-color: var(--ink-3); }
+.imgcard .cover { border-radius: 0; }
+.imgcard.current { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.imgcard-info { display: grid; gap: 1px; padding: 8px 6px 10px; }
+.imgcard-src { font-weight: 650; font-size: .86rem; }
+.imgcard-m { font-family: var(--font-mono); font-size: .76rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.curmark { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); }
+.curimg { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 14px; align-items: center; padding: 12px; border: 1px dashed var(--rule); border-radius: 12px; }
+.curimg.wide { grid-template-columns: 150px minmax(0, 1fr); }
+.curimg-info { display: grid; gap: 6px; justify-items: start; min-width: 0; }
+
 @media (max-width: 370px) {
   .two { grid-template-columns: 1fr; }
   .album { grid-template-columns: 84px minmax(0, 1fr); }
   .fab { padding: 0 18px 0 14px; }
+  .hero-main { grid-template-columns: 88px minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
@@ -481,17 +567,26 @@ details.albumdata[open] > summary svg { transform: none; }
   <div class="wrap gutter top-row">
     <div class="brand">
       <h1 class="wordmark">Acervo</h1>
-      <span class="brand-sub">Digitalizações · <span id="count-total">0 itens</span></span>
     </div>
     <button class="icon-btn" id="btn-settings" type="button" aria-label="Ajustes">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
     </button>
   </div>
+  <div class="wrap gutter tabs" role="tablist" aria-label="Seções do acervo">
+    <button class="tab" type="button" role="tab" id="tab-digi" aria-selected="true" aria-controls="main-panel">Digitalizações <span class="c" id="count-digi">0</span></button>
+    <button class="tab" type="button" role="tab" id="tab-remux" aria-selected="false" aria-controls="main-panel" tabindex="-1">Remuxes <span class="c" id="count-remux">0</span></button>
+  </div>
 </header>
 
-<main>
+<main id="main-panel" role="tabpanel" aria-labelledby="tab-digi">
   <div id="storage-warn" class="wrap gutter" hidden>
     <p class="note warn" style="margin-top:14px"><strong>Este navegador não está deixando o Acervo salvar dados (janela privada?).</strong> O que você adicionar agora some ao fechar a página.</p>
+  </div>
+  <div id="db-wait" class="wrap gutter" hidden>
+    <p class="note warn" style="margin-top:14px"><strong>Atualizando o banco do Acervo.</strong> Feche as outras abas ou janelas com o Acervo aberto para continuar.</p>
+  </div>
+  <div id="db-stale" class="wrap gutter" hidden>
+    <div class="note warn nudge" style="margin-top:14px"><p><strong>O Acervo foi atualizado em outra aba.</strong> Recarregue esta página para continuar salvando.</p><button class="btn" type="button" onclick="location.reload()">Recarregar</button></div>
   </div>
 
   <section id="summary" class="wrap gutter summary" aria-label="Resumo por status" hidden>
@@ -533,7 +628,7 @@ details.albumdata[open] > summary svg { transform: none; }
 
   <div id="nudge" class="wrap gutter" hidden></div>
 
-  <section class="wrap gutter listwrap" aria-label="Digitalizações">
+  <section class="wrap gutter listwrap" id="list-section" aria-label="Digitalizações">
     <div id="items" class="rows"></div>
     <div id="noresults" class="noresults" hidden>
       <p>Nada no acervo com esses filtros.</p>
@@ -571,7 +666,7 @@ details.albumdata[open] > summary svg { transform: none; }
 'use strict';
 
 /* ================= Constantes ================= */
-const VERSION = '1.1';
+const VERSION = '1.2';
 
 const MEDIA = [
   { id: 'vinil', label: 'Vinil', dg: 'Vinyl', icon: 'vinyl',
@@ -655,6 +750,14 @@ const ICONS = {
   eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
   phone: '<rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  film: '<rect x="3.5" y="4" width="17" height="16" rx="2"/><path d="M7.5 4v16M16.5 4v16M3.5 8h4M3.5 12h4M3.5 16h4M16.5 8h4M16.5 12h4M16.5 16h4"/>',
+  image: '<rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M5 17l4.5-4.5 3 3 2.5-2.5 4 4"/>',
+  speaker: '<path d="M5 9.5h3l4-3.5v12l-4-3.5H5z"/><path d="M15.5 9.5a3.5 3.5 0 0 1 0 5M18 7a7 7 0 0 1 0 10"/>',
+  cc: '<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M10.5 10.3a2.3 2.3 0 1 0 0 3.4M17 10.3a2.3 2.3 0 1 0 0 3.4"/>',
+  up: '<path d="M6 14l6-6 6 6"/>',
+  down: '<path d="M6 10l6 6 6-6"/>',
+  pencil: '<path d="M15.5 5.5l3 3L9 18H6v-3z"/>',
+  clip: '<rect x="6" y="5" width="12" height="15" rx="2"/><path d="M9.5 5V3.8h5V5M9 10h6M9 13.5h6M9 17h3.5"/>',
 };
 
 /* ================= Utilidades ================= */
@@ -719,38 +822,48 @@ function initials(it) {
   return (((words[0] || '?')[0] || '?') + ((words[1] || '')[0] || '')).toUpperCase();
 }
 
-/* ================= Dados (IndexedDB) ================= */
+/* ================= Dados (IndexedDB) =================
+   Versão 2 do banco: 'items' (digitalizações, como antes) + 'remuxes'.
+   A atualização só cria a gaveta nova; as digitalizações não são tocadas. */
 const DB = {
   db: null,
   mem: null,
   async open() {
-    if (!('indexedDB' in window)) { this.mem = new Map(); return; }
+    if (!('indexedDB' in window)) { this.useMem(); return; }
     try {
       this.db = await new Promise((resolve, reject) => {
-        const r = indexedDB.open('acervo', 1);
+        const r = indexedDB.open('acervo', 2);
         r.onupgradeneeded = () => {
           const db = r.result;
           if (!db.objectStoreNames.contains('items')) db.createObjectStore('items', { keyPath: 'id' });
+          if (!db.objectStoreNames.contains('remuxes')) db.createObjectStore('remuxes', { keyPath: 'id' });
         };
         r.onsuccess = () => resolve(r.result);
         r.onerror = () => reject(r.error);
-        r.onblocked = () => reject(new Error('blocked'));
+        // Outra aba com a versão antiga aberta: espera ela fechar, em vez de desistir e perder o acesso aos dados.
+        r.onblocked = () => { $('#db-wait').hidden = false; };
       });
+      $('#db-wait').hidden = true;
+      // Se uma versão mais nova abrir em outra aba, solta o banco e pede para recarregar.
+      this.db.onversionchange = () => { this.db.close(); this.db = null; this.useMem(); $('#db-stale').hidden = false; };
     } catch (e) {
-      this.mem = new Map();
+      $('#db-wait').hidden = true;
+      this.useMem();
     }
   },
-  store(mode) { return this.db.transaction('items', mode).objectStore('items'); },
+  useMem() { this.mem = { items: new Map(), remuxes: new Map() }; },
+  store(name, mode) { return this.db.transaction(name, mode).objectStore(name); },
   wrap(req) { return new Promise((res, rej) => { req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); }); },
-  async all() { return this.mem ? [...this.mem.values()] : this.wrap(this.store('readonly').getAll()); },
-  async put(item) { if (this.mem) { this.mem.set(item.id, item); return; } return this.wrap(this.store('readwrite').put(item)); },
-  async del(id) { if (this.mem) { this.mem.delete(id); return; } return this.wrap(this.store('readwrite').delete(id)); },
-  async putMany(items) {
-    if (this.mem) { items.forEach(i => this.mem.set(i.id, i)); return; }
+  async all(name) { return this.mem ? [...this.mem[name].values()] : this.wrap(this.store(name, 'readonly').getAll()); },
+  async put(name, obj) { if (this.mem) { this.mem[name].set(obj.id, obj); return; } return this.wrap(this.store(name, 'readwrite').put(obj)); },
+  async del(name, id) { if (this.mem) { this.mem[name].delete(id); return; } return this.wrap(this.store(name, 'readwrite').delete(id)); },
+  async putMany(name, list) {
+    if (!list.length) return;
+    if (this.mem) { list.forEach(i => this.mem[name].set(i.id, i)); return; }
     await new Promise((resolve, reject) => {
-      const tx = this.db.transaction('items', 'readwrite');
-      const st = tx.objectStore('items');
-      items.forEach(i => st.put(i));
+      const tx = this.db.transaction(name, 'readwrite');
+      const st = tx.objectStore(name);
+      list.forEach(i => st.put(i));
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
@@ -998,13 +1111,25 @@ async function testToken(t) {
 
 /* ================= Estado e lista principal ================= */
 const S = {
+  tab: store.get('tab') === 'remux' ? 'remux' : 'digi',
   items: [],
+  remuxes: [],
+  // filtros da aba Digitalizações
   q: '',
   medium: '',
   status: '',
   sort: store.get('sort') || 'recent',
   view: store.get('view') === 'grid' ? 'grid' : 'list',
 };
+// filtros da aba Remuxes
+const R = {
+  q: '',
+  lang: '',
+  status: '',
+  sort: store.get('rsort') || 'recent',
+  view: store.get('rview') === 'list' ? 'list' : 'grid',
+};
+const F = () => (S.tab === 'remux' ? R : S);
 
 const hayCache = new WeakMap();
 function hay(it) {
@@ -1084,11 +1209,26 @@ function itemCard(it) {
 }
 
 function render() {
+  $('#count-digi').textContent = fmtN(S.items.length);
+  $('#count-remux').textContent = fmtN(S.remuxes.length);
+  $('#fab').hidden = false;
+  if (S.tab === 'remux') renderRemuxes(); else renderDigi();
+  renderNudge();
+}
+
+/* Barra e legenda por status, compartilhadas pelas duas abas (F = estado de filtros da aba). */
+function paintSummary(counts, Fs) {
+  $('#bar').replaceChildren(...LEGEND_ORDER.filter(s => counts[s]).map(s => { const sp = h('span', { class: 'st-' + s }); sp.style.flexGrow = counts[s]; return sp; }));
+  $('#legend').replaceChildren(...LEGEND_ORDER.map(s => h('button', {
+    type: 'button', class: 'st-' + s, 'aria-pressed': String(Fs.status === s),
+    onclick: () => { Fs.status = Fs.status === s ? '' : s; render(); },
+  }, h('span', { class: 'dot' }), h('span', { class: 'n' }, fmtN(counts[s])), legendLabel(s, counts[s]))));
+}
+
+function renderDigi() {
   const total = S.items.length;
-  $('#count-total').textContent = `${fmtN(total)} ${plural(total, 'item', 'itens')}`;
   $('#summary').hidden = total === 0;
   $('#controls').hidden = total === 0;
-  $('#fab').hidden = false;
 
   const q = norm(S.q.trim());
   const byText = q ? S.items.filter(it => hay(it).includes(q)) : S.items.slice();
@@ -1097,11 +1237,7 @@ function render() {
   const forStatus = byText.filter(it => !S.medium || it.medium === S.medium);
   const counts = { fila: 0, andamento: 0, concluido: 0, refazer: 0 };
   forStatus.forEach(it => { counts[it.status] = (counts[it.status] || 0) + 1; });
-  $('#bar').replaceChildren(...LEGEND_ORDER.filter(s => counts[s]).map(s => { const sp = h('span', { class: 'st-' + s }); sp.style.flexGrow = counts[s]; return sp; }));
-  $('#legend').replaceChildren(...LEGEND_ORDER.map(s => h('button', {
-    type: 'button', class: 'st-' + s, 'aria-pressed': String(S.status === s),
-    onclick: () => { S.status = S.status === s ? '' : s; render(); },
-  }, h('span', { class: 'dot' }), h('span', { class: 'n' }, fmtN(counts[s])), legendLabel(s, counts[s]))));
+  paintSummary(counts, S);
 
   // chips de mídia (respeita busca e status)
   const forMedium = byText.filter(it => !S.status || it.status === S.status);
@@ -1132,7 +1268,6 @@ function render() {
   const empty = $('#empty');
   empty.hidden = total !== 0;
   if (total === 0) renderEmpty(empty);
-  renderNudge();
 }
 
 function renderEmpty(el) {
@@ -1151,7 +1286,7 @@ function renderEmpty(el) {
 
 function renderNudge() {
   const el = $('#nudge');
-  const n = S.items.length;
+  const n = S.items.length + S.remuxes.length;
   const last = store.get('last_export');
   const snooze = +(store.get('nudge_snooze') || 0);
   const days = last ? (Date.now() - Date.parse(last)) / 864e5 : Infinity;
@@ -1228,7 +1363,7 @@ function onKey(e) {
     }
     return;
   }
-  if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '') && S.items.length) {
+  if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '') && (S.tab === 'remux' ? S.remuxes : S.items).length) {
     e.preventDefault();
     $('#filter-q').focus();
   }
@@ -1276,14 +1411,25 @@ function chipsRow(options, current, onPick, ariaLabel) {
 }
 function spinnerLine(text) { return [h('span', { class: 'spinner', 'aria-hidden': 'true' }), text]; }
 
-function sugField(draft, { id, label, key, placeholder, sugs, onInput }) {
+const splitList = s => String(s || '').split(/\s*[,;]\s*/).map(x => x.trim()).filter(Boolean);
+
+/* append: a sugestão é somada à lista (ex.: "EternalDub, ffmpeg") em vez de substituir o texto. */
+function sugField(draft, { id, label, key, placeholder, sugs, onInput, append }) {
   const ph = () => (typeof placeholder === 'function' ? placeholder() : placeholder);
   const input = h('input', { class: 'inp', id, value: draft[key] || '', placeholder: ph(), autocomplete: 'off' });
   const box = h('div', { class: 'sugs' });
   const update = () => {
     const cur = input.value.trim();
-    const list = sugs().filter(s => s && s !== cur).slice(0, 6);
-    box.replaceChildren(...list.map(s => h('button', { type: 'button', class: 'sug', title: s, onclick: () => { input.value = s; draft[key] = s; onInput && onInput(); update(); } }, s)));
+    const have = append ? splitList(cur).map(norm) : [];
+    const list = sugs().filter(s => s && s !== cur && !have.includes(norm(s))).slice(0, 6);
+    box.replaceChildren(...list.map(s => h('button', {
+      type: 'button', class: 'sug', title: s,
+      onclick: () => {
+        const now = input.value.trim().replace(/[,;]\s*$/, '');
+        input.value = append && now ? `${now}, ${s}` : s;
+        draft[key] = input.value; onInput && onInput(); update();
+      },
+    }, append ? '+ ' + s : s)));
     box.hidden = !list.length;
     input.placeholder = ph();
   };
@@ -1699,7 +1845,7 @@ function formView(draft, mode) {
 async function saveDraft(draft) {
   const now = new Date().toISOString();
   const item = normalizeItem({ ...draft, id: draft.id || uid(), createdAt: draft.createdAt || now, updatedAt: now });
-  await DB.put(item);
+  await DB.put('items', item);
   const i = S.items.findIndex(x => x.id === item.id);
   if (i >= 0) S.items[i] = item; else S.items.push(item);
   draft.id = item.id;
@@ -1723,13 +1869,13 @@ async function duplicate(draft, validate) {
 async function removeItem(id) {
   const it = S.items.find(x => x.id === id);
   if (!it) { Sheet.close(); return; }
-  await DB.del(id);
+  await DB.del('items', id);
   S.items = S.items.filter(x => x.id !== id);
   render();
   Sheet.close();
   toast('Digitalização excluída', {
     action: 'Desfazer', duration: 7000,
-    onAction: async () => { await DB.put(it); S.items.push(it); render(); toast('Digitalização restaurada'); },
+    onAction: async () => { await DB.put('items', it); S.items.push(it); render(); toast('Digitalização restaurada'); },
   });
 }
 
@@ -1853,6 +1999,1157 @@ function versionsView(draft, formV) {
   return v;
 }
 
+/* =====================================================================
+   REMUXES
+   Registro dos BDRemuxes montados (ex.: com o EternalDub): o filme (TMDb),
+   a fonte do vídeo, as faixas de áudio/dublagens com a origem e o ajuste de
+   sincronia de cada uma, as legendas, o que foi feito e a capa escolhida.
+   ===================================================================== */
+const LANGS = [
+  ['pt-BR', 'Português (Brasil)', 'PT-BR'],
+  ['pt-PT', 'Português (Portugal)', 'PT-PT'],
+  ['en', 'Inglês', 'EN'],
+  ['es-419', 'Espanhol (América Latina)', 'ES-LA'],
+  ['es-ES', 'Espanhol (Espanha)', 'ES'],
+  ['ja', 'Japonês', 'JA'],
+  ['fr', 'Francês', 'FR'],
+  ['it', 'Italiano', 'IT'],
+  ['de', 'Alemão', 'DE'],
+  ['ru', 'Russo', 'RU'],
+  ['zh', 'Chinês', 'ZH'],
+  ['ko', 'Coreano', 'KO'],
+  ['zxx', 'Sem diálogo', 'SEM'],
+  ['und', 'Outro idioma', '?'],
+];
+const LANG = Object.fromEntries(LANGS.map(([code, name, short]) => [code, { code, name, short }]));
+const langInfo = code => LANG[code] || { code, name: code || 'Idioma não informado', short: String(code || '?').toUpperCase() };
+const LANG_RE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,4})?$/;
+
+const VIDEO_SOURCES = ['UHD Blu-ray', 'Blu-ray', 'Blu-ray 3D', 'DVD', 'WEB-DL', 'HD DVD', 'LaserDisc'];
+const VIDEO_SPECS = ['HEVC 2160p HDR10', 'HEVC 2160p Dolby Vision', 'HEVC 2160p SDR', 'AVC 1080p', 'VC-1 1080p', 'MPEG-2 1080i', 'MPEG-2 480i'];
+const AUDIO_LABELS = ['Original', 'Dublagem clássica', 'Redublagem', 'Dublagem para TV', 'Dublagem para cinema', 'Dublagem para VHS', 'Comentários'];
+const AUDIO_CODECS = ['AC3 2.0', 'AC3 5.1', 'E-AC3 5.1', 'DTS 5.1', 'DTS-HD MA 5.1', 'DTS-HD MA 2.0', 'TrueHD 7.1 Atmos', 'FLAC 2.0', 'FLAC 1.0', 'AAC 2.0', 'PCM 2.0'];
+const AUDIO_ORIGINS = ['Blu-ray original', 'DVD', 'VHS', 'LaserDisc', 'Gravação de TV', 'Outro remux', 'WEB'];
+const SUB_KINDS = ['Completa', 'Forçada', 'SDH / CC', 'Comentários'];
+const SUB_FORMATS = ['SRT', 'PGS (SUP)', 'ASS/SSA', 'VobSub (IDX/SUB)', 'WebVTT'];
+const SUB_ORIGINS = ['Blu-ray original', 'DVD (OCR)', 'Feita por mim', 'Revisada por mim', 'Internet'];
+const TOOLS = ['EternalDub', 'ffmpeg', 'Audacity', 'Subtitle Edit', 'MakeMKV', 'eac3to', 'iZotope RX'];
+
+/* ---------- Modelo ---------- */
+function safeArt(u) {
+  if (typeof u !== 'string') return '';
+  if (u.length <= 1000 && /^https:\/\/[^\s"'<>]+$/i.test(u)) return u;
+  if (u.length <= 4e6 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u)) return u;
+  return '';
+}
+const safeHttp = u => (typeof u === 'string' && u.length <= 1000 && /^https?:\/\/[^\s"'<>]+$/i.test(u) ? u : '');
+
+function normalizeTrack(t, kind) {
+  const s = (v, max) => (v == null ? '' : String(v)).slice(0, max).trim();
+  const base = { id: s(t.id, 80) || uid(), lang: LANG_RE.test(t.lang || '') ? t.lang : 'und', isDefault: t.isDefault === true };
+  return kind === 'audio'
+    ? { ...base, label: s(t.label, 200), codec: s(t.codec, 120), origin: s(t.origin, 300), sync: s(t.sync, 300) }
+    : { ...base, kind: s(t.kind, 60), format: s(t.format, 60), origin: s(t.origin, 300), notes: s(t.notes, 500) };
+}
+
+function normalizeRemux(r) {
+  const s = (v, max = 2000) => (v == null ? '' : String(v)).slice(0, max);
+  const n = v => { const x = parseInt(v, 10); return Number.isFinite(x) && x > 0 ? x : null; };
+  const t = (r && typeof r.tmdb === 'object' && r.tmdb) || {};
+  const tid = n(t.id);
+  const year = n(r.year);
+  const now = new Date().toISOString();
+  const tracks = (arr, kind, max) => (Array.isArray(arr) ? arr : []).filter(x => x && typeof x === 'object').slice(0, max).map(x => normalizeTrack(x, kind));
+  return {
+    id: s(r.id, 80) || uid(),
+    createdAt: s(r.createdAt, 40) || now,
+    updatedAt: s(r.updatedAt, 40) || now,
+    tmdb: { type: tid ? (t.type === 'tv' ? 'tv' : 'movie') : null, id: tid, imdbId: /^tt\d{5,12}$/.test(t.imdbId || '') ? t.imdbId : '' },
+    title: s(r.title, 500).trim(),
+    originalTitle: s(r.originalTitle, 500).trim(),
+    year: year && year < 2200 ? year : null,
+    poster: safeArt(r.poster),
+    backdrop: safeArt(r.backdrop),
+    status: STATUS_IDS.includes(r.status) ? r.status : 'concluido',
+    date: /^\d{4}-\d{2}-\d{2}$/.test(r.date || '') ? r.date : '',
+    videoSource: s(r.videoSource, 200).trim(),
+    edition: s(r.edition, 300).trim(),
+    video: s(r.video, 200).trim(),
+    audio: tracks(r.audio, 'audio', 40),
+    subs: tracks(r.subs, 'subs', 60),
+    tools: s(r.tools, 400).trim(),
+    description: s(r.description, 20000),
+    fileName: s(r.fileName, 500).trim(),
+    size: s(r.size, 60).trim(),
+    location: s(r.location, 400).trim(),
+    link: safeHttp(r.link),
+  };
+}
+
+function blankRemux() {
+  return {
+    id: null, createdAt: null, tmdb: { type: null, id: null, imdbId: '' },
+    title: '', originalTitle: '', year: null, poster: '', backdrop: '',
+    status: 'concluido', date: '', videoSource: '', edition: '', video: '', audio: [], subs: [],
+    tools: '', description: '', fileName: '', size: '', location: '', link: '',
+  };
+}
+
+const rhayCache = new WeakMap();
+function rhay(r) {
+  let v = rhayCache.get(r);
+  if (!v) {
+    const tr = [...r.audio, ...r.subs].map(t => [langInfo(t.lang).name, langInfo(t.lang).short, t.label, t.codec, t.origin, t.sync, t.kind, t.format, t.notes].join(' '));
+    v = norm([r.title, r.originalTitle, r.year, r.videoSource, r.edition, r.video, r.tools, r.description, r.fileName, r.location, ...tr].join(' '));
+    rhayCache.set(r, v);
+  }
+  return v;
+}
+function rhist(key) {
+  const counts = new Map();
+  for (const r of S.remuxes) { const v = String(r[key] || '').trim(); if (v) counts.set(v, (counts.get(v) || 0) + 1); }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
+}
+function thist(kind, key) {
+  const counts = new Map();
+  for (const r of S.remuxes) for (const t of r[kind] || []) { const v = String(t[key] || '').trim(); if (v) counts.set(v, (counts.get(v) || 0) + 1); }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
+}
+function toolHist() {
+  const counts = new Map();
+  for (const r of S.remuxes) for (const t of splitList(r.tools)) counts.set(t, (counts.get(t) || 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
+}
+function sortRemuxes(arr) {
+  const byUpdated = (a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '');
+  const cmp = {
+    recent: byUpdated,
+    added: (a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''),
+    title: (a, b) => collator.compare(a.title, b.title) || (a.year || 0) - (b.year || 0),
+    year: (a, b) => (a.year || 1e4) - (b.year || 1e4) || collator.compare(a.title, b.title),
+    date: (a, b) => (b.date || '').localeCompare(a.date || '') || byUpdated(a, b),
+  }[R.sort] || byUpdated;
+  return arr.sort(cmp);
+}
+const differs = (a, b) => a && norm(a) !== norm(b);
+const remuxLangs = r => uniq(r.audio.map(t => t.lang)).map(c => langInfo(c).short);
+function resOf(r) {
+  const m = /\b(\d{3,4})[pi]\b/i.exec(r.video || '');
+  if (m) return m[0].toLowerCase();
+  if (/\b(4k|uhd)\b/i.test(r.video || '') || /\buhd\b/i.test(r.videoSource || '')) return '2160p';
+  return '';
+}
+const fmtShort = f => String(f || '').split(/\s*\(/)[0].trim();
+function trackSummary(t, kind) {
+  const L = langInfo(t.lang);
+  if (kind === 'audio') {
+    return { L, title: t.label || L.name, meta: [t.label ? L.name : '', t.codec, t.origin && 'origem: ' + t.origin, t.sync && 'sincronia: ' + t.sync].filter(Boolean).join(' · ') };
+  }
+  return { L, title: [t.kind || 'Legenda', t.format].filter(Boolean).join(' · '), meta: [L.name, t.origin && 'origem: ' + t.origin, t.notes].filter(Boolean).join(' · ') };
+}
+
+/* ---------- Capas ---------- */
+function artEl(src, { seed = '', text = '?', shape = 'poster', ic = 'film', eager = false } = {}) {
+  const box = h('span', { class: 'cover ' + shape });
+  const ph = () => {
+    const p = h('span', { class: 'ph' }, h('b', null, text), icon(ic));
+    p.style.setProperty('--h', hashHue(seed));
+    return p;
+  };
+  if (src) {
+    const img = h('img', { src, alt: '', loading: eager ? null : 'lazy', decoding: 'async', referrerpolicy: 'no-referrer' });
+    img.addEventListener('error', () => img.replaceWith(ph()), { once: true });
+    box.append(img);
+  } else {
+    box.append(ph());
+  }
+  return box;
+}
+const remuxArt = (r, shape = 'poster', eager = false) => artEl(shape === 'poster' ? r.poster : r.backdrop, { seed: (r.title || '') + '|' + (r.year || ''), text: initials({ title: r.title }), shape, eager });
+function artOrigin(u) {
+  if (!u) return '';
+  if (u.startsWith('data:')) return 'Imagem enviada do aparelho';
+  try {
+    const host = new URL(u).hostname;
+    if (/tmdb\.org$/.test(host)) return 'TheMovieDb';
+    if (/media-amazon\.com$/.test(host)) return 'The Open Movie Database';
+    return 'Link: ' + host;
+  } catch (e) { return 'Link'; }
+}
+/* Reduz a imagem enviada (scan da capa, arte própria) e guarda como JPEG dentro do registro. */
+function fileToArt(file, maxW, maxH) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const k = Math.min(1, maxW / img.naturalWidth, maxH / img.naturalHeight);
+        const w = Math.max(1, Math.round(img.naturalWidth * k)), hh = Math.max(1, Math.round(img.naturalHeight * k));
+        const c = document.createElement('canvas');
+        c.width = w; c.height = hh;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, hh);
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, w, hh);
+        resolve(c.toDataURL('image/jpeg', 0.86));
+      } catch (e) {
+        reject(e);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+    img.src = url;
+  });
+}
+function testImage(url) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const timer = setTimeout(() => resolve(false), 15000);
+    img.referrerPolicy = 'no-referrer';
+    img.onload = () => { clearTimeout(timer); resolve(img.naturalWidth > 0); };
+    img.onerror = () => { clearTimeout(timer); resolve(false); };
+    img.src = url;
+  });
+}
+
+/* ---------- TMDb (filmes, séries e imagens) e OMDb (capa extra) ---------- */
+const cleanKey = k => String(k || '').replace(/^\s*(authorization:\s*)?(bearer\s+)?/i, '').replace(/["'\s]/g, '');
+function apiErrText(e, name) {
+  switch (e && e.code) {
+    case 'nokey': return `Salve a chave do ${name} em Ajustes.`;
+    case 'auth': return `O ${name} recusou a chave salva. Confira em Ajustes.`;
+    case 'rate': return `Muitas buscas no ${name} em pouco tempo. Espere um pouco e tente de novo.`;
+    case 'notfound': return `Esse título não existe no ${name}.`;
+    case 'offline': return 'Sem internet agora. O acervo continua disponível; a busca volta com a conexão.';
+    case 'network': return `Não consegui falar com o ${name}. Confira a conexão e a chave em Ajustes.`;
+    case 'http': return `O ${name} respondeu com erro ${e.status}. Tente de novo em instantes.`;
+    default: return `Algo deu errado ao falar com o ${name}. Tente de novo.`;
+  }
+}
+
+const TM = {
+  base: 'https://api.themoviedb.org/3',
+  img: 'https://image.tmdb.org/t/p/',
+  get key() { return cleanKey(store.get('tmdb_key')); },
+  setKey(k) { store.set('tmdb_key', cleanKey(k) || null); },
+  // "Chave da API" (v3) vai na URL, sem pré-checagem de CORS; o "token de leitura" (v4, um JWT) vai no cabeçalho.
+  isBearer: k => /^eyJ/.test(k) && k.length > 60,
+  async req(path, params = {}, { signal } = {}) {
+    if (navigator.onLine === false) throw { code: 'offline' };
+    const key = this.key;
+    if (!key) throw { code: 'nokey' };
+    const url = new URL(this.base + path);
+    for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
+    const init = { signal };
+    if (this.isBearer(key)) init.headers = { Authorization: 'Bearer ' + key };
+    else url.searchParams.set('api_key', key);
+    let res;
+    try {
+      res = await fetch(url.toString(), init);
+    } catch (e) {
+      if (e && e.name === 'AbortError') throw e;
+      throw { code: 'network' };
+    }
+    if (res.ok) return res.json();
+    if (res.status === 401) throw { code: 'auth', status: 401 };
+    if (res.status === 404) throw { code: 'notfound', status: 404 };
+    if (res.status === 429) throw { code: 'rate', status: 429 };
+    throw { code: 'http', status: res.status };
+  },
+  search(kind, query, year, page, signal) {
+    const p = { query, page, language: 'pt-BR', include_adult: 'false' };
+    if (year) p[kind === 'tv' ? 'first_air_date_year' : 'year'] = year;
+    return this.req(`/search/${kind}`, p, { signal });
+  },
+  async details(kind, id) {
+    const d = await this.req(`/${kind}/${id}`, { language: 'pt-BR', append_to_response: 'external_ids' });
+    const r = tmResult(d, kind);
+    r.imdbId = (kind === 'movie' && d.imdb_id) || (d.external_ids && d.external_ids.imdb_id) || '';
+    return r;
+  },
+  async find(imdbId) {
+    const d = await this.req(`/find/${imdbId}`, { external_source: 'imdb_id', language: 'pt-BR' });
+    return [...(d.movie_results || []).map(x => tmResult(x, 'movie')), ...(d.tv_results || []).map(x => tmResult(x, 'tv'))];
+  },
+  // Sem parâmetro de idioma o TMDb devolve as imagens de todos os idiomas; o filtro é feito aqui.
+  images(kind, id) { return this.req(`/${kind}/${id}/images`); },
+};
+function tmResult(r, kind) {
+  const tv = kind === 'tv';
+  const p = r.poster_path, b = r.backdrop_path;
+  return {
+    kind: tv ? 'tv' : 'movie', id: r.id,
+    title: String((tv ? r.name : r.title) || ''),
+    originalTitle: String((tv ? r.original_name : r.original_title) || ''),
+    year: parseInt(tv ? r.first_air_date : r.release_date, 10) || null,
+    poster: p ? TM.img + 'w500' + p : '', thumb: p ? TM.img + 'w185' + p : '',
+    backdrop: b ? TM.img + 'w1280' + b : '', imdbId: '',
+  };
+}
+function parseFilmQuery(q) {
+  const s = q.trim();
+  let m = s.match(/themoviedb\.org\/(movie|tv)\/(\d+)/i);
+  if (m) return { kind: 'tmdb', type: m[1].toLowerCase(), id: +m[2] };
+  m = s.match(/imdb\.com\/(?:[a-z]{2}\/)?title\/(tt\d{5,12})/i) || s.match(/^(tt\d{5,12})$/i);
+  if (m) return { kind: 'imdb', id: m[1].toLowerCase() };
+  m = s.match(/^(.*?)\s*[([](\d{4})[)\]]\s*$/);
+  if (m && m[1].trim()) return { kind: 'text', value: m[1].trim(), year: +m[2] };
+  return { kind: 'text', value: s, year: null };
+}
+function applyTm(d, r, overwrite) {
+  const same = d.tmdb && d.tmdb.id === r.id && d.tmdb.type === r.kind;
+  d.tmdb = { type: r.kind, id: r.id, imdbId: r.imdbId || (same ? d.tmdb.imdbId : '') };
+  for (const k of ['title', 'originalTitle', 'year', 'poster', 'backdrop']) if ((overwrite || !d[k]) && r[k]) d[k] = r[k];
+}
+/* Completa o que a busca não traz (código do IMDb, fundo), sem mexer no que já foi preenchido. */
+async function enrichRemux(d, view) {
+  if (!d.tmdb.id) return;
+  const ticket = (d._ticket = (d._ticket || 0) + 1);
+  let info;
+  try { info = await TM.details(d.tmdb.type || 'movie', d.tmdb.id); } catch (e) { return; }
+  if (d._ticket !== ticket || d.tmdb.id !== info.id) return;
+  if (info.imdbId) d.tmdb.imdbId = info.imdbId;
+  for (const k of ['originalTitle', 'year', 'poster', 'backdrop']) if (!d[k] && info[k]) d[k] = info[k];
+  if (view && view.refresh) view.refresh();
+}
+const tmdbUrl = t => (t && t.id ? `https://www.themoviedb.org/${t.type === 'tv' ? 'tv' : 'movie'}/${t.id}` : '');
+const imdbUrl = t => (t && t.imdbId ? `https://www.imdb.com/title/${t.imdbId}/` : '');
+function tmdbCredit() {
+  return h('p', { class: 'credit' }, 'Dados e imagens de filmes do ', h('a', { href: 'https://www.themoviedb.org', target: '_blank', rel: 'noopener' }, 'TMDb'),
+    '. Este app usa a API do TMDb, mas não é endossado nem certificado por ele.');
+}
+
+const OM = {
+  get key() { return cleanKey(store.get('omdb_key')); },
+  setKey(k) { store.set('omdb_key', cleanKey(k) || null); },
+  async req(params) {
+    if (navigator.onLine === false) throw { code: 'offline' };
+    if (!this.key) throw { code: 'nokey' };
+    const url = new URL('https://www.omdbapi.com/');
+    url.searchParams.set('apikey', this.key);
+    for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
+    let res;
+    try { res = await fetch(url.toString()); } catch (e) { throw { code: 'network' }; }
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* resposta sem JSON */ }
+    const err = data && data.Response === 'False' ? String(data.Error || '') : '';
+    if (res.status === 401 || /api key|not activated/i.test(err)) throw { code: 'auth', status: res.status };
+    if (/limit/i.test(err)) throw { code: 'rate' };
+    if (!res.ok) throw { code: 'http', status: res.status };
+    return data || {};
+  },
+  async poster({ imdbId, title, year }) {
+    const d = await this.req(imdbId ? { i: imdbId } : { t: title, y: year || '' });
+    return d && typeof d.Poster === 'string' && /^https:\/\//.test(d.Poster) ? { url: d.Poster } : null;
+  },
+};
+
+async function testTmdb(k) {
+  const prev = TM.key;
+  TM.setKey(k);
+  try {
+    await TM.req('/configuration');
+    render();
+    return { ok: true, message: 'TMDb conectado.' };
+  } catch (e) {
+    if (e && e.code === 'auth') { TM.setKey(prev); return { ok: false, message: 'O TMDb não aceitou essa chave. Confira se copiou a “Chave da API” inteira, sem espaços.' }; }
+    render();
+    return { ok: true, message: 'Chave salva, mas não deu para testar agora. ' + apiErrText(e, 'TMDb') };
+  }
+}
+async function testOmdb(k) {
+  const prev = OM.key;
+  OM.setKey(k);
+  try {
+    await OM.req({ i: 'tt0092106' });
+    return { ok: true, message: 'OMDb conectado.' };
+  } catch (e) {
+    if (e && e.code === 'auth') { OM.setKey(prev); return { ok: false, message: 'O OMDb não aceitou essa chave. Se ela é nova, clique antes no link de ativação que chegou por e-mail.' }; }
+    return { ok: true, message: 'Chave salva, mas não deu para testar agora. ' + apiErrText(e, 'OMDb') };
+  }
+}
+
+/* Formulário de chave reaproveitado em Ajustes (TMDb e OMDb). */
+function keyForm({ id, label, value, placeholder, status, test, remove, removed }) {
+  const inp = h('input', { class: 'inp', id, type: 'password', value, placeholder, autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
+  const msg = h('p', { class: 'msg', role: 'status' }, status);
+  const btn = h('button', { class: 'btn btn-primary', type: 'submit' }, 'Salvar e testar');
+  return h('form', {
+    class: 'stack',
+    onsubmit: async e => {
+      e.preventDefault();
+      const t = inp.value.trim();
+      if (!t) { msg.textContent = 'Cole a chave antes de salvar.'; return; }
+      btn.disabled = true;
+      msg.replaceChildren(...spinnerLine('Testando…'));
+      const r = await test(t);
+      btn.disabled = false;
+      if (r.ok) { Sheet.rerender(); toast(r.message); } else msg.textContent = r.message;
+    },
+  },
+  h('div', { class: 'field' },
+    h('label', { class: 'lbl', for: id }, label),
+    h('div', { class: 'inline-form' }, inp,
+      h('button', { class: 'icon-btn bordered', type: 'button', 'aria-label': 'Mostrar ou ocultar a chave', onclick: () => { inp.type = inp.type === 'password' ? 'text' : 'password'; } }, icon('eye')))),
+  msg,
+  h('div', { class: 'btnrow' }, btn,
+    value ? h('button', { class: 'btn', type: 'button', onclick: () => { remove(); render(); Sheet.rerender(); toast(removed); } }, 'Remover chave') : null));
+}
+
+function tmdbKeyCard(onSaved) {
+  const inp = h('input', { class: 'inp', id: 'tmdb-inline', type: 'password', placeholder: 'Cole a chave aqui', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
+  const msg = h('p', { class: 'msg', role: 'status' });
+  const btn = h('button', { class: 'btn btn-primary', type: 'submit' }, 'Salvar');
+  return h('form', {
+    class: 'note tokencard',
+    onsubmit: async e => {
+      e.preventDefault();
+      const t = inp.value.trim();
+      if (!t) { msg.textContent = 'Cole a chave antes de salvar.'; return; }
+      btn.disabled = true;
+      msg.replaceChildren(...spinnerLine('Testando com o TMDb…'));
+      const r = await testTmdb(t);
+      btn.disabled = false;
+      msg.textContent = r.message;
+      if (r.ok) { toast(r.message); onSaved(); }
+    },
+  },
+  h('strong', null, 'Conecte o TMDb para buscar filmes e capas'),
+  h('p', null, 'O TMDb (The Movie Database) é a base que o Jellyfin usa para as capas. A chave é gratuita:'),
+  h('ol', { class: 'mini-steps' },
+    h('li', null, 'Crie uma conta em ', h('a', { href: 'https://www.themoviedb.org/signup', target: '_blank', rel: 'noopener' }, 'themoviedb.org'), '.'),
+    h('li', null, 'Abra ', h('a', { href: 'https://www.themoviedb.org/settings/api', target: '_blank', rel: 'noopener' }, 'Configurações → API'), ' e peça uma chave para uso pessoal.'),
+    h('li', null, 'Copie a “Chave da API” e cole aqui.')),
+  h('div', { class: 'inline-form' }, h('label', { class: 'sr-only', for: 'tmdb-inline' }, 'Chave do TMDb'), inp, btn),
+  msg,
+  h('p', { class: 'fine' }, 'A chave fica salva só neste aparelho. Sem ela dá para registrar o remux e enviar a capa do aparelho, só não dá para buscar no TMDb.'));
+}
+
+/* ---------- Lista da aba Remuxes ---------- */
+function subsTag(r) {
+  if (!r.subs.length) return null;
+  const langs = uniq(r.subs.map(t => langInfo(t.lang).short));
+  const fmts = uniq(r.subs.map(t => fmtShort(t.format)));
+  return h('span', { class: 'mtag', title: 'Legendas' }, icon('cc', 13), [langs.join(' '), fmts.join('/')].filter(Boolean).join(' · '));
+}
+function remuxRow(r) {
+  const sub = [differs(r.originalTitle, r.title) ? r.originalTitle : '', r.year].filter(Boolean).join(' · ');
+  return h('button', { class: 'row rrow', type: 'button', onclick: () => openRemux(r.id) },
+    remuxArt(r),
+    h('span', { class: 'row-main' },
+      h('span', { class: 'row-title' }, r.title || 'Sem título'),
+      h('span', { class: 'row-sub' }, sub || '—', r.video ? h('span', { class: 'mono' }, ' · ' + r.video) : null),
+      h('span', { class: 'row-tags' },
+        ...remuxLangs(r).map(s => h('span', { class: 'ltag', title: 'Áudio' }, s)),
+        subsTag(r), pill(r.status), r.date ? h('span', { class: 'date' }, fmtDate(r.date)) : null)));
+}
+function remuxCard(r) {
+  const cv = remuxArt(r);
+  const res = resOf(r);
+  cv.append(h('span', { class: 'sdot st-' + r.status }));
+  if (res) cv.append(h('span', { class: 'mtag over' }, res));
+  const langs = remuxLangs(r);
+  return h('button', {
+    class: 'card', type: 'button', onclick: () => openRemux(r.id),
+    'aria-label': [r.title || 'Sem título', r.year, langs.join(', '), statusLabel(r.status)].filter(Boolean).join(', '),
+  },
+  cv,
+  h('span', { class: 'card-title' }, r.title || 'Sem título'),
+  h('span', { class: 'card-artist' }, [r.year, langs.join(' ')].filter(Boolean).join(' · ') || '—'));
+}
+
+function renderRemuxes() {
+  const total = S.remuxes.length;
+  $('#summary').hidden = total === 0;
+  $('#controls').hidden = total === 0;
+
+  const q = norm(R.q.trim());
+  const byText = q ? S.remuxes.filter(r => rhay(r).includes(q)) : S.remuxes.slice();
+  const hasLang = r => !R.lang || r.audio.some(t => t.lang === R.lang);
+
+  const counts = { fila: 0, andamento: 0, concluido: 0, refazer: 0 };
+  byText.filter(hasLang).forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1; });
+  paintSummary(counts, R);
+
+  // chips por idioma do áudio (respeita busca e status)
+  const forLang = byText.filter(r => !R.status || r.status === R.status);
+  const lcount = {};
+  forLang.forEach(r => uniq(r.audio.map(t => t.lang)).forEach(l => { lcount[l] = (lcount[l] || 0) + 1; }));
+  const codes = [...LANGS.map(l => l[0]).filter(c => lcount[c] || R.lang === c), ...Object.keys(lcount).filter(c => !LANG[c])];
+  if (R.lang && !codes.includes(R.lang)) codes.push(R.lang);
+  const row = $('#medium-chips');
+  const scroll = row.scrollLeft;
+  row.replaceChildren(
+    h('button', { type: 'button', class: 'chip', 'aria-pressed': String(!R.lang), onclick: () => { R.lang = ''; render(); } }, 'Todos', h('span', { class: 'c' }, fmtN(forLang.length))),
+    ...codes.map(c => h('button', { type: 'button', class: 'chip', title: 'Áudio em ' + langInfo(c).name, 'aria-pressed': String(R.lang === c), onclick: () => { R.lang = R.lang === c ? '' : c; render(); } },
+      icon('speaker', 16), langInfo(c).short, h('span', { class: 'c' }, fmtN(lcount[c] || 0)))));
+  row.scrollLeft = scroll;
+
+  const list = sortRemuxes(forLang.filter(hasLang));
+  const box = $('#items');
+  box.className = R.view === 'grid' ? 'grid' : 'rows';
+  const frag = document.createDocumentFragment();
+  for (const r of list) frag.append(R.view === 'grid' ? remuxCard(r) : remuxRow(r));
+  box.replaceChildren(frag);
+
+  $('#noresults').hidden = !(total > 0 && list.length === 0);
+  const empty = $('#empty');
+  empty.hidden = total !== 0;
+  if (total === 0) renderRemuxEmpty(empty);
+}
+
+function renderRemuxEmpty(el) {
+  const hasKey = !!TM.key;
+  el.replaceChildren(
+    h('h2', null, 'Nenhum remux ainda'),
+    h('p', null, 'Registre cada BDRemux que você montou: o filme, de onde veio o vídeo, as faixas de áudio e dublagens (com a origem e o ajuste de sincronia de cada uma), as legendas e o que foi feito.'),
+    h('ol', { class: 'steps' },
+      h('li', { class: hasKey ? 'done' : null }, h('span', null, h('strong', null, 'Conecte o TMDb'), h('br'),
+        hasKey ? 'Chave salva neste aparelho.' : h('span', null, 'Cole a chave gratuita em ', h('button', { class: 'linkbtn', type: 'button', onclick: openSettings }, 'Ajustes'), ' para buscar o filme e as capas.'))),
+      h('li', null, h('span', null, h('strong', null, 'Busque o filme'), h('br'), 'Pelo nome, pelo link do TMDb ou pelo código do IMDb.')),
+      h('li', null, h('span', null, h('strong', null, 'Descreva o remux'), h('br'), 'Idiomas e dublagens, legendas (SRT, PGS…), o que você fez e a capa que quiser.'))),
+    h('div', { class: 'btnrow' }, h('button', { class: 'btn btn-primary', type: 'button', onclick: openAdd }, icon('plus', 18), 'Adicionar remux')));
+}
+
+/* ---------- Tela: buscar o filme no TMDb (novo remux, ou ligar um remux ao TMDb) ---------- */
+function filmSearchView(mode, target, formV) {
+  const linking = mode === 'link';
+  const st = {
+    q: linking ? [target.originalTitle || target.title, target.year ? `(${target.year})` : ''].filter(Boolean).join(' ') : '',
+    kind: linking && target.tmdb.type ? target.tmdb.type : (store.get('tkind') === 'tv' ? 'tv' : 'movie'),
+    results: [], page: 0, pages: 0, total: 0, loading: false, loadingText: '', error: null, searched: false, lastQ: '', ctl: null,
+  };
+  const v = { title: linking ? 'Ligar ao TMDb' : 'Adicionar remux' };
+  let input, statusEl, resultsEl, moreBtn;
+
+  v.autofocus = () => input;
+  v.render = (body, foot) => {
+    if (!TM.key) body.append(tmdbKeyCard(() => { Sheet.rerender(); if (st.q.trim()) go(true); }));
+    input = h('input', { class: 'inp', type: 'search', id: 'tm-q', value: st.q, placeholder: 'Filme ou série, link do TMDb ou tt… do IMDb', enterkeyhint: 'search', autocomplete: 'off', autocorrect: 'off', spellcheck: 'false' });
+    input.addEventListener('input', () => { st.q = input.value; autoSearch(); });
+    const form = h('form', { class: 'searchform', role: 'search', onsubmit: e => { e.preventDefault(); input.blur(); go(true); } },
+      h('label', { class: 'searchbox', for: 'tm-q' }, h('span', { class: 'sr-only' }, 'Buscar no TMDb'), icon('search', 18), input),
+      h('button', { class: 'btn btn-primary', type: 'submit' }, 'Buscar'));
+    const seg = segmented([['movie', 'Filmes'], ['tv', 'Séries']], st.kind, val => {
+      st.kind = val; store.set('tkind', val);
+      if (st.q.trim()) go(true);
+    });
+    statusEl = h('div', { class: 'status-line', role: 'status', 'aria-live': 'polite' });
+    resultsEl = h('div', { class: 'results' });
+    moreBtn = h('button', { class: 'btn btn-block', type: 'button', hidden: true, onclick: () => go(false) }, 'Mais resultados');
+    body.append(form, seg,
+      h('p', { class: 'hint' }, 'Para filtrar pelo ano, escreva entre parênteses: Transformers (1986).'),
+      statusEl, resultsEl, moreBtn, tmdbCredit());
+    if (!linking) foot.append(h('button', { class: 'btn btn-block', type: 'button', onclick: () => Sheet.push(remuxFormView(blankRemux(), 'new')) }, icon('plus', 18), 'Adicionar sem o TMDb'));
+    paint();
+    if (linking && st.q && !st.searched && !st.loading && !st.error && TM.key) go(true);
+  };
+
+  const autoSearch = debounce(() => {
+    const p = parseFilmQuery(st.q);
+    if (p.kind !== 'text' || p.value.length >= 3) go(true);
+  }, 650);
+
+  async function go(reset) {
+    const q = st.q.trim();
+    if (!q) return;
+    if (!TM.key) { st.error = { code: 'nokey' }; st.results = []; st.searched = false; paint(); return; }
+    const p = parseFilmQuery(q);
+    if (st.ctl) st.ctl.abort();
+    const ctl = st.ctl = new AbortController();
+    if (reset || p.kind !== 'text') { st.page = 0; st.pages = 0; st.total = 0; st.results = []; }
+    st.loading = true; st.error = null;
+    st.loadingText = p.kind === 'text' ? 'Buscando no TMDb…' : 'Abrindo o link…';
+    paint();
+    try {
+      if (p.kind === 'tmdb') {
+        const r = await TM.details(p.type, p.id);
+        if (ctl !== st.ctl) return;
+        st.loading = false; paint();
+        pick(r, true);
+        return;
+      }
+      if (p.kind === 'imdb') {
+        const list = await TM.find(p.id);
+        if (ctl !== st.ctl) return;
+        st.results = list; st.total = list.length; st.page = 1; st.pages = 1; st.searched = true; st.lastQ = q;
+        if (list.length === 1) { st.loading = false; paint(); pick(list[0]); }
+        return;
+      }
+      const data = await TM.search(st.kind, p.value, p.year, st.page + 1, ctl.signal);
+      if (ctl !== st.ctl) return;
+      st.page = data.page || st.page + 1;
+      st.pages = data.total_pages || 1;
+      st.total = data.total_results != null ? data.total_results : (data.results || []).length;
+      st.results = st.results.concat((data.results || []).map(x => tmResult(x, st.kind)));
+      st.searched = true; st.lastQ = q;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      if (ctl === st.ctl) st.error = e;
+    } finally {
+      if (ctl === st.ctl) { st.loading = false; paint(); }
+    }
+  }
+
+  function pick(r, full) {
+    if (linking) {
+      applyTm(target, r, false);
+      formV.dirty = true;
+      Sheet.back();
+      if (!full || !r.imdbId) enrichRemux(target, formV);
+      toast('Ligado ao TMDb: ' + (r.title || r.originalTitle));
+      return;
+    }
+    const d = blankRemux();
+    applyTm(d, r, true);
+    const fv = remuxFormView(d, 'new');
+    Sheet.push(fv);
+    if (!full || !r.imdbId || !r.backdrop) enrichRemux(d, fv);
+  }
+
+  function resultRow(r) {
+    const owned = S.remuxes.filter(x => x.tmdb.id === r.id && x.tmdb.type === r.kind).length;
+    return h('button', { class: 'res', type: 'button', onclick: () => pick(r) },
+      artEl(r.thumb, { seed: r.title + '|' + (r.year || ''), text: initials({ title: r.title }), shape: 'poster' }),
+      h('span', { class: 'res-main' },
+        h('span', { class: 'res-t' }, r.title || r.originalTitle || 'Sem título'),
+        differs(r.originalTitle, r.title) ? h('span', { class: 'res-a' }, r.originalTitle) : null,
+        h('span', { class: 'res-m' }, [r.year, r.kind === 'tv' ? 'Série' : 'Filme'].filter(Boolean).join(' · '))),
+      owned ? h('span', { class: 'owned' }, icon('check', 12), owned > 1 ? `${owned} no acervo` : 'No acervo') : h('span', { class: 'res-go' }, icon('next', 18)));
+  }
+
+  function paint() {
+    if (!statusEl) return;
+    statusEl.className = 'status-line';
+    statusEl.replaceChildren();
+    resultsEl.replaceChildren(...st.results.map(resultRow));
+    moreBtn.hidden = !(st.results.length && st.page < st.pages);
+    moreBtn.disabled = st.loading;
+    moreBtn.textContent = st.loading && st.results.length ? 'Carregando…' : 'Mais resultados';
+    if (st.loading && !st.results.length) { statusEl.append(...spinnerLine(st.loadingText)); return; }
+    if (st.error) { statusEl.className = 'status-line error'; statusEl.append(apiErrText(st.error, 'TMDb')); return; }
+    if (!st.searched) return;
+    if (!st.results.length) {
+      statusEl.append(`Nada encontrado para “${st.lastQ}”.`);
+      statusEl.append(h('button', { class: 'linkbtn', type: 'button', onclick: () => { st.kind = st.kind === 'tv' ? 'movie' : 'tv'; store.set('tkind', st.kind); Sheet.rerender(); go(true); } }, st.kind === 'tv' ? 'Buscar em Filmes' : 'Buscar em Séries'));
+      return;
+    }
+    statusEl.append(`${fmtN(st.results.length)} de ${fmtN(st.total)} ${plural(st.total, 'resultado', 'resultados')}`);
+  }
+
+  return v;
+}
+
+/* ---------- Tela: formulário do remux ---------- */
+function heroCard(draft, formV) {
+  const el = h('div', { class: 'hero' });
+  el.update = () => {
+    const sub = [differs(draft.originalTitle, draft.title) ? draft.originalTitle : '', draft.year].filter(Boolean).join(' · ');
+    const tUrl = tmdbUrl(draft.tmdb), iUrl = imdbUrl(draft.tmdb);
+    el.className = 'hero' + (draft.backdrop ? ' has-bg' : '');
+    el.replaceChildren(
+      draft.backdrop ? h('div', { class: 'hero-bg' }, h('img', { src: draft.backdrop, alt: '', decoding: 'async', referrerpolicy: 'no-referrer', onerror: e => e.target.remove() })) : '',
+      h('div', { class: 'hero-main' },
+        h('button', { class: 'hero-poster', type: 'button', 'aria-label': 'Trocar a capa', onclick: () => Sheet.push(imagesView(draft, formV, 'poster')) },
+          remuxArt(draft, 'poster', true), h('span', { class: 'hero-edit' }, icon('pencil', 14))),
+        h('div', { class: 'hero-info' },
+          h('p', { class: 'hero-t' }, draft.title || 'Sem título'),
+          sub ? h('p', { class: 'hero-m' }, sub) : null,
+          h('div', { class: 'hero-links' },
+            tUrl ? h('a', { href: tUrl, target: '_blank', rel: 'noopener' }, 'TMDb', icon('external', 14)) : null,
+            iUrl ? h('a', { href: iUrl, target: '_blank', rel: 'noopener' }, 'IMDb', icon('external', 14)) : null,
+            h('button', { class: 'linkbtn', type: 'button', onclick: () => Sheet.push(filmSearchView('link', draft, formV)) }, tUrl ? 'Trocar filme' : 'Ligar ao TMDb')),
+          h('div', { class: 'hero-btns' },
+            h('button', { class: 'btn', type: 'button', onclick: () => Sheet.push(imagesView(draft, formV, 'poster')) }, icon('image', 18), 'Capa'),
+            h('button', { class: 'btn', type: 'button', onclick: () => Sheet.push(imagesView(draft, formV, 'backdrop')) }, icon('image', 18), 'Fundo')))));
+  };
+  el.update();
+  return el;
+}
+
+function filmFields(draft, onChange) {
+  const manual = !draft.tmdb.id;
+  const inputs = {};
+  const titleErr = h('p', { class: 'err', hidden: true }, 'Informe o título.');
+  const field = (id, label, key, extra = {}) => {
+    const inp = h('input', { class: 'inp', id, value: draft[key] == null ? '' : draft[key], autocomplete: 'off', ...extra });
+    inp.addEventListener('input', () => {
+      draft[key] = key === 'year' ? (parseInt(inp.value, 10) || null) : inp.value;
+      if (key === 'title' && inp.value.trim()) titleErr.hidden = true;
+      onChange();
+    });
+    inputs[key] = inp;
+    return h('div', { class: 'field' }, h('label', { class: 'lbl', for: id }, label), inp);
+  };
+  const titleField = field('r-title', 'Título', 'title');
+  titleField.append(titleErr);
+  const det = h('details', { class: 'albumdata', open: manual || null },
+    h('summary', null, icon('chevron', 18), manual ? 'Dados do filme' : 'Editar dados do filme'),
+    h('div', { class: 'albumdata-body' },
+      titleField,
+      field('r-otitle', 'Título original', 'originalTitle'),
+      field('r-year', 'Ano', 'year', { inputmode: 'numeric', maxlength: '4' })));
+  return {
+    el: det,
+    manual,
+    showTitleError() { det.open = true; titleErr.hidden = false; inputs.title.focus(); },
+    sync() { for (const [k, inp] of Object.entries(inputs)) if (document.activeElement !== inp) inp.value = draft[k] == null ? '' : draft[k]; },
+  };
+}
+
+function textField(obj, { id, label, key, placeholder, type = 'text', onInput, extra = {} }) {
+  const inp = h('input', { class: 'inp', id, type, value: obj[key] || '', placeholder, autocomplete: 'off', ...extra });
+  inp.addEventListener('input', () => { obj[key] = inp.value; onInput && onInput(); });
+  return h('div', { class: 'field' }, h('label', { class: 'lbl', for: id }, label), inp);
+}
+
+function tracksBlock(draft, kind, formV) {
+  const list = draft[kind];
+  const box = h('div', { class: 'tracks' });
+  const move = (i, d) => {
+    const j = i + d;
+    if (j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    formV.dirty = true;
+    Sheet.rerender();
+  };
+  list.forEach((t, i) => {
+    const sm = trackSummary(t, kind);
+    box.append(h('div', { class: 'track' },
+      h('button', { class: 'track-main', type: 'button', 'aria-label': `Editar: ${sm.L.name}, ${sm.title}`, onclick: () => Sheet.push(trackView(draft, kind, i, formV)) },
+        h('span', { class: 'track-n' }, String(i + 1)),
+        h('span', { class: 'ltag', title: sm.L.name }, sm.L.short),
+        h('span', { class: 'track-text' },
+          h('span', { class: 'track-t' }, sm.title, t.isDefault ? h('span', { class: 'flag' }, 'padrão') : null),
+          sm.meta ? h('span', { class: 'track-m' }, sm.meta) : null)),
+      list.length > 1 ? h('div', { class: 'track-move' },
+        h('button', { type: 'button', 'aria-label': 'Subir', disabled: i === 0 || null, onclick: () => move(i, -1) }, icon('up', 18)),
+        h('button', { type: 'button', 'aria-label': 'Descer', disabled: i === list.length - 1 || null, onclick: () => move(i, 1) }, icon('down', 18))) : null));
+  });
+  if (!list.length) box.append(h('p', { class: 'fine' }, kind === 'audio' ? 'Nenhuma faixa de áudio registrada.' : 'Nenhuma legenda registrada.'));
+  box.append(h('button', { class: 'btn addtrack', type: 'button', onclick: () => Sheet.push(trackView(draft, kind, null, formV)) },
+    icon('plus', 18), kind === 'audio' ? 'Adicionar faixa de áudio' : 'Adicionar legenda'));
+  return box;
+}
+
+function remuxFormView(draft, mode) {
+  const v = { title: mode === 'edit' ? 'Editar remux' : 'Novo remux', dirty: false };
+  const parts = {};
+  const touch = () => { v.dirty = true; };
+
+  v.refresh = () => {
+    if (Sheet.top !== v || !parts.hero) return;
+    parts.hero.update();
+    parts.film.sync();
+  };
+
+  v.render = (body, foot) => {
+    parts.film = filmFields(draft, () => { parts.hero.update(); touch(); });
+    parts.hero = heroCard(draft, v);
+
+    // status e data
+    const dateInp = h('input', { class: 'inp', type: 'date', id: 'r-date', value: draft.date || '' });
+    dateInp.addEventListener('input', () => { draft.date = dateInp.value; touch(); });
+    const stField = h('div', { class: 'field', role: 'radiogroup', 'aria-labelledby': 'lbl-rstatus' },
+      h('div', { class: 'lbl', id: 'lbl-rstatus' }, 'Status'),
+      h('div', { class: 'choices' }, STATUS.map(s => choice('rstatus', s.id, s.label, draft.status === s.id, val => {
+        draft.status = val; touch();
+        if (val === 'concluido' && !draft.date) { draft.date = todayISO(); dateInp.value = draft.date; }
+      }, 'status st-' + s.id))));
+    const dateField = h('div', { class: 'field' },
+      h('label', { class: 'lbl', for: 'r-date' }, 'Data do remux'),
+      h('div', { class: 'inline-form' }, dateInp,
+        h('button', { class: 'btn', type: 'button', onclick: () => { draft.date = todayISO(); dateInp.value = draft.date; touch(); } }, 'Hoje')));
+
+    // vídeo
+    const vsrc = sugField(draft, { id: 'r-vsrc', label: 'Fonte do vídeo', key: 'videoSource', onInput: touch, placeholder: 'UHD Blu-ray', sugs: () => uniq([...rhist('videoSource'), ...VIDEO_SOURCES]) });
+    const ved = sugField(draft, { id: 'r-ed', label: 'Edição do disco', key: 'edition', onInput: touch, placeholder: 'Distribuidora, ano, edição especial…', sugs: () => rhist('edition') });
+    const vspec = sugField(draft, { id: 'r-video', label: 'Vídeo (codec e resolução)', key: 'video', onInput: touch, placeholder: 'HEVC 2160p HDR10', sugs: () => uniq([...rhist('video'), ...VIDEO_SPECS]) });
+
+    // o que foi feito
+    const desc = h('textarea', { class: 'inp', id: 'r-desc', rows: '6', placeholder: 'De onde veio cada dublagem, como foi sincronizada (atraso, cortes, fps), o que foi restaurado ou corrigido, problemas que ficaram…' }, draft.description || '');
+    desc.addEventListener('input', () => { draft.description = desc.value; touch(); });
+    const descField = h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'r-desc' }, 'Descrição do que fiz'), desc);
+    const tools = sugField(draft, { id: 'r-tools', label: 'Ferramentas', key: 'tools', onInput: touch, placeholder: 'EternalDub, ffmpeg…', append: true, sugs: () => uniq([...toolHist(), ...TOOLS]) });
+
+    // arquivo
+    const loc = sugField(draft, { id: 'r-loc', label: 'Onde está', key: 'location', onInput: touch, placeholder: 'HD externo, NAS, pasta…', sugs: () => uniq([...rhist('location'), ...history('location')]) });
+
+    const na = draft.audio.length, ns = draft.subs.length;
+    body.append(parts.hero);
+    if (parts.film.manual) body.append(parts.film.el);
+    body.append(stField, dateField,
+      section('Vídeo', 'film', vsrc.el, ved.el, vspec.el),
+      section(na ? `Áudio · ${na} ${plural(na, 'faixa', 'faixas')}` : 'Áudio', 'speaker', tracksBlock(draft, 'audio', v)),
+      section(ns ? `Legendas · ${ns}` : 'Legendas', 'cc', tracksBlock(draft, 'subs', v)),
+      section('O que foi feito', 'pencil', descField, tools.el),
+      section('Arquivo', 'box',
+        textField(draft, { id: 'r-file', label: 'Nome do arquivo', key: 'fileName', onInput: touch, placeholder: 'Filme (1986) [BDRemux 2160p] [PT-BR].mkv', extra: { autocapitalize: 'off', spellcheck: 'false' } }),
+        h('div', { class: 'two' }, textField(draft, { id: 'r-size', label: 'Tamanho', key: 'size', onInput: touch, placeholder: '48,3 GB' }), loc.el),
+        textField(draft, { id: 'r-link', label: 'Link (onde publiquei)', key: 'link', type: 'url', onInput: touch, placeholder: 'https://…', extra: { inputmode: 'url', autocapitalize: 'off', spellcheck: 'false' } })));
+    if (!parts.film.manual) body.append(parts.film.el);
+    if (mode === 'edit') {
+      body.append(h('div', { class: 'danger' },
+        h('button', { class: 'btn', type: 'button', onclick: async () => { toast((await copyText(fichaText(normalizeRemux(draft)))) ? 'Ficha copiada. É só colar no post.' : 'Não deu para copiar neste navegador.'); } }, icon('clip', 18), 'Copiar ficha'),
+        h('button', { class: 'btn btn-danger', type: 'button', onclick: () => removeRemux(draft.id) }, icon('trash', 18), 'Excluir')));
+    }
+
+    const saveBtn = h('button', {
+      class: 'btn btn-primary btn-block', type: 'button',
+      onclick: async () => {
+        if (!String(draft.title || '').trim()) { parts.film.showTitleError(); return; }
+        saveBtn.disabled = true;
+        try {
+          await saveRemux(draft);
+          Sheet.close();
+          toast(mode === 'edit' ? 'Alterações salvas' : 'Remux salvo no acervo');
+        } catch (e) {
+          saveBtn.disabled = false;
+          toast('Não deu para salvar: ' + ((e && e.message) || 'erro no armazenamento do navegador'));
+        }
+      },
+    }, mode === 'edit' ? 'Salvar alterações' : 'Salvar no acervo');
+    foot.append(saveBtn);
+  };
+  return v;
+}
+
+/* ---------- Tela: faixa de áudio ou legenda ---------- */
+function trackView(draft, kind, idx, formV) {
+  const isNew = idx == null;
+  const audio = kind === 'audio';
+  const t = isNew
+    ? (audio
+      ? { id: uid(), lang: 'pt-BR', label: '', codec: '', origin: '', sync: '', isDefault: !draft.audio.length }
+      : { id: uid(), lang: 'pt-BR', kind: 'Completa', format: 'SRT', origin: '', notes: '', isDefault: false })
+    : clone(draft[kind][idx]);
+  const v = { title: audio ? (isNew ? 'Nova faixa de áudio' : `Faixa de áudio ${idx + 1}`) : (isNew ? 'Nova legenda' : `Legenda ${idx + 1}`), dirty: false };
+  const touch = () => { v.dirty = true; };
+
+  v.render = (body, foot) => {
+    const langSel = h('select', { class: 'inp', id: 't-lang' }, LANGS.map(([code, name]) => h('option', { value: code, selected: t.lang === code || null }, name)));
+    if (!LANG[t.lang]) langSel.append(h('option', { value: t.lang, selected: true }, t.lang));
+    langSel.addEventListener('change', () => { t.lang = langSel.value; touch(); });
+    const langField = h('div', { class: 'field' }, h('label', { class: 'lbl', for: 't-lang' }, 'Idioma'), selwrap(langSel));
+    const defChk = h('input', { type: 'checkbox', id: 't-def', checked: t.isDefault || null });
+    defChk.addEventListener('change', () => { t.isDefault = defChk.checked; touch(); });
+    const defField = h('label', { class: 'check', for: 't-def' }, defChk, audio ? 'Faixa padrão (a que toca primeiro)' : 'Legenda padrão (já aparece ligada)');
+
+    if (audio) {
+      const label = sugField(t, { id: 't-label', label: 'Descrição', key: 'label', onInput: touch, placeholder: 'Dublagem Herbert Richers (1990)', sugs: () => uniq([...thist('audio', 'label'), ...AUDIO_LABELS]) });
+      const codec = sugField(t, { id: 't-codec', label: 'Formato (codec e canais)', key: 'codec', onInput: touch, placeholder: 'AC3 2.0', sugs: () => uniq([...thist('audio', 'codec'), ...AUDIO_CODECS]) });
+      const origin = sugField(t, { id: 't-origin', label: 'De onde veio', key: 'origin', onInput: touch, placeholder: 'Remux de terceiros, DVD, VHS, TV…', sugs: () => uniq([...thist('audio', 'origin'), ...AUDIO_ORIGINS]) });
+      const sync = textField(t, { id: 't-sync', label: 'Ajuste de sincronia', key: 'sync', onInput: touch, placeholder: '+0,450 s · cortes em 2 pontos · 25 → 23,976 fps' });
+      body.append(langField, label.el, codec.el, origin.el, sync,
+        h('p', { class: 'fine', style: 'margin-top:-12px' }, 'O que precisou para casar com o vídeo: atraso aplicado, pontos de corte, conversão de velocidade. Deixe em branco se a faixa já é do disco.'),
+        defField);
+    } else {
+      const kindField = h('div', { class: 'field', role: 'radiogroup', 'aria-labelledby': 'lbl-tkind' },
+        h('div', { class: 'lbl', id: 'lbl-tkind' }, 'Tipo'),
+        h('div', { class: 'choices' }, SUB_KINDS.map((k, i) => choice('tkind', String(i), k, t.kind === k, val => { t.kind = SUB_KINDS[+val]; touch(); }))));
+      const format = sugField(t, { id: 't-format', label: 'Formato', key: 'format', onInput: touch, placeholder: 'SRT', sugs: () => uniq([...SUB_FORMATS, ...thist('subs', 'format')]) });
+      const origin = sugField(t, { id: 't-sorigin', label: 'De onde veio', key: 'origin', onInput: touch, placeholder: 'Blu-ray original, OCR do DVD, feita por mim…', sugs: () => uniq([...thist('subs', 'origin'), ...SUB_ORIGINS]) });
+      const notes = textField(t, { id: 't-notes', label: 'Notas', key: 'notes', onInput: touch, placeholder: 'Sincronizada com a dublagem, OCR revisado…' });
+      body.append(langField, kindField, format.el, origin.el, notes, defField);
+    }
+    if (!isNew) {
+      body.append(h('div', { class: 'danger' },
+        h('button', { class: 'btn btn-danger', type: 'button', onclick: () => { draft[kind].splice(idx, 1); formV.dirty = true; v.dirty = false; Sheet.back(); toast(audio ? 'Faixa removida' : 'Legenda removida'); } },
+          icon('trash', 18), audio ? 'Remover faixa' : 'Remover legenda')));
+    }
+    foot.append(h('button', {
+      class: 'btn btn-primary btn-block', type: 'button',
+      onclick: () => {
+        if (t.isDefault) draft[kind].forEach((o, j) => { if (j !== idx) o.isDefault = false; });
+        if (isNew) draft[kind].push(t); else draft[kind][idx] = t;
+        formV.dirty = true;
+        v.dirty = false;
+        Sheet.back();
+      },
+    }, isNew ? (audio ? 'Adicionar faixa' : 'Adicionar legenda') : 'Salvar'));
+  };
+  return v;
+}
+
+/* ---------- Tela: escolher capa ou fundo (fonte, tipo, idiomas, como no Jellyfin) ---------- */
+function imagesView(draft, formV, type0) {
+  const st = {
+    type: type0 === 'backdrop' ? 'backdrop' : 'poster',
+    source: ['all', 'tmdb', 'omdb'].includes(store.get('img_src')) ? store.get('img_src') : 'all',
+    all: store.get('img_all') === '1',
+    tm: null, tmFor: '', tmErr: null, tmLoading: false,
+    om: null, omFor: '', omErr: null, omLoading: false,
+  };
+  const v = { title: 'Capa e fundo' };
+  let gridEl, statusEl, countEl, langBox;
+  const poster = () => st.type === 'poster';
+
+  v.render = body => {
+    if (st.source === 'omdb' && !OM.key) st.source = 'all';
+    const srcSel = h('select', { class: 'inp', id: 'img-src' },
+      h('option', { value: 'all', selected: st.source === 'all' || null }, 'Todas'),
+      h('option', { value: 'tmdb', selected: st.source === 'tmdb' || null }, 'TheMovieDb'),
+      OM.key ? h('option', { value: 'omdb', selected: st.source === 'omdb' || null }, 'The Open Movie Database') : null);
+    srcSel.addEventListener('change', () => { st.source = srcSel.value; store.set('img_src', st.source); load(); paint(); });
+    const typeSel = h('select', { class: 'inp', id: 'img-type' },
+      h('option', { value: 'poster', selected: poster() || null }, 'Capa (pôster)'),
+      h('option', { value: 'backdrop', selected: !poster() || null }, 'Fundo'));
+    typeSel.addEventListener('change', () => { st.type = typeSel.value; Sheet.rerender(); });
+    const allChk = h('input', { type: 'checkbox', id: 'img-all', checked: st.all || null });
+    allChk.addEventListener('change', () => { st.all = allChk.checked; store.set('img_all', st.all ? '1' : null); paint(); });
+    langBox = h('label', { class: 'check', for: 'img-all' }, allChk, 'Todos os idiomas');
+    countEl = h('span', { class: 'imgcount', 'aria-live': 'polite' });
+    statusEl = h('div', { class: 'status-stack', role: 'status' });
+    gridEl = h('div', { class: 'imggrid' });
+
+    const cur = draft[st.type];
+    const shape = poster() ? 'poster' : 'wide';
+    const curBlock = cur ? h('div', { class: 'curimg' + (poster() ? '' : ' wide') },
+      remuxArt(draft, shape, true),
+      h('div', { class: 'curimg-info' },
+        h('div', { class: 'lbl' }, poster() ? 'Capa atual' : 'Fundo atual'),
+        h('p', { class: 'msg' }, artOrigin(cur)),
+        h('button', { class: 'btn btn-danger', type: 'button', onclick: () => { draft[st.type] = ''; formV.dirty = true; Sheet.rerender(); } }, icon('trash', 18), 'Remover'))) : null;
+
+    // imagem própria: arquivo do aparelho
+    const fileIn = h('input', { type: 'file', accept: 'image/*', hidden: true, id: 'img-file' });
+    const upMsg = h('p', { class: 'msg', role: 'status' });
+    const upBtn = h('button', { class: 'btn', type: 'button', onclick: () => fileIn.click() }, icon('upload', 18), 'Enviar do aparelho');
+    fileIn.addEventListener('change', async () => {
+      const f = fileIn.files && fileIn.files[0];
+      fileIn.value = '';
+      if (!f) return;
+      upBtn.disabled = true;
+      upMsg.replaceChildren(...spinnerLine('Preparando a imagem…'));
+      try {
+        choose(poster() ? await fileToArt(f, 600, 900) : await fileToArt(f, 1280, 720));
+      } catch (e) {
+        upBtn.disabled = false;
+        upMsg.textContent = 'Não consegui abrir essa imagem. Tente um JPG ou PNG.';
+      }
+    });
+    // imagem própria: link
+    const urlIn = h('input', { class: 'inp', id: 'img-url', type: 'url', inputmode: 'url', placeholder: 'https://…', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
+    const urlMsg = h('p', { class: 'msg', role: 'status' });
+    const urlBtn = h('button', { class: 'btn', type: 'submit' }, 'Usar');
+    const urlForm = h('form', {
+      class: 'stack',
+      onsubmit: async e => {
+        e.preventDefault();
+        const u = urlIn.value.trim();
+        if (!/^https:\/\/[^\s"'<>]+$/i.test(u)) { urlMsg.textContent = 'Cole um link que comece com https://'; return; }
+        urlBtn.disabled = true;
+        urlMsg.replaceChildren(...spinnerLine('Abrindo a imagem…'));
+        if (await testImage(u)) choose(u);
+        else { urlBtn.disabled = false; urlMsg.textContent = 'Não consegui abrir uma imagem nesse link. Use o link direto do arquivo (termina em .jpg, .png…).'; }
+      },
+    }, h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'img-url' }, 'Link de uma imagem'), h('div', { class: 'inline-form' }, urlIn, urlBtn)), urlMsg);
+
+    body.append(
+      h('p', { class: 'hint' }, h('strong', null, draft.title || 'Sem título'), draft.year ? ` (${draft.year})` : ''),
+      curBlock,
+      h('div', { class: 'imgtools' },
+        h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'img-src' }, 'Fonte'), selwrap(srcSel)),
+        h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'img-type' }, 'Tipo'), selwrap(typeSel)),
+        langBox, countEl),
+      statusEl, gridEl,
+      section('Imagem própria', 'image',
+        h('p', null, poster()
+          ? 'Use o scan da sua capa, uma arte que você fez ou qualquer imagem. Ela fica guardada no aparelho e vai junto no backup.'
+          : 'Uma cena do filme, de preferência larga (16:9). Fica guardada no aparelho e vai junto no backup.'),
+        h('div', { class: 'btnrow' }, upBtn), fileIn, upMsg, urlForm),
+      tmdbCredit());
+    paint();
+    load();
+  };
+
+  function choose(url) {
+    draft[st.type] = url;
+    formV.dirty = true;
+    Sheet.back();
+  }
+
+  function load() {
+    const kind = draft.tmdb.type || 'movie';
+    const tmKey = `${kind}/${draft.tmdb.id}`;
+    if (st.source !== 'omdb' && TM.key && draft.tmdb.id && st.tmFor !== tmKey && !st.tmLoading) {
+      st.tmLoading = true; st.tmErr = null;
+      TM.images(kind, draft.tmdb.id)
+        .then(d => { st.tm = d; }, e => { st.tm = null; st.tmErr = e; })
+        .finally(() => { st.tmFor = tmKey; st.tmLoading = false; paint(); });
+    }
+    const omTitle = draft.originalTitle || draft.title;
+    const omKey = draft.tmdb.imdbId || `${omTitle}|${draft.year || ''}`;
+    if (st.source !== 'tmdb' && poster() && OM.key && (draft.tmdb.imdbId || omTitle) && st.omFor !== omKey && !st.omLoading) {
+      st.omLoading = true; st.omErr = null;
+      OM.poster({ imdbId: draft.tmdb.imdbId, title: omTitle, year: draft.year })
+        .then(x => { st.om = x; }, e => { st.om = null; st.omErr = e; })
+        .finally(() => { st.omFor = omKey; st.omLoading = false; paint(); });
+    }
+  }
+
+  // Ordem parecida com a do Jellyfin: idioma preferido primeiro, depois nota e votos.
+  function results() {
+    const out = [];
+    let total = 0;
+    if (st.source !== 'omdb' && st.tm) {
+      const arr = (poster() ? st.tm.posters : st.tm.backdrops) || [];
+      total += arr.length;
+      for (const x of arr) {
+        if (!x || !x.file_path) continue;
+        const lang = x.iso_639_1 || null;
+        if (!st.all && !(lang === null || lang === 'pt' || lang === 'en')) continue;
+        out.push({
+          src: 'tmdb', lang, w: x.width, h: x.height, rating: x.vote_average, votes: x.vote_count,
+          url: TM.img + (poster() ? 'w500' : 'w1280') + x.file_path,
+          thumb: TM.img + (poster() ? 'w342' : 'w780') + x.file_path,
+        });
+      }
+    }
+    if (st.source !== 'tmdb' && poster() && st.om) { total++; out.push({ src: 'omdb', lang: undefined, url: st.om.url, thumb: st.om.url }); }
+    const order = poster() ? ['pt', 'null', 'en'] : ['null', 'pt', 'en'];
+    const rank = l => { const i = order.indexOf(String(l)); return i < 0 ? 3 : i; };
+    out.sort((a, b) => (a.src === b.src ? 0 : a.src === 'tmdb' ? -1 : 1) || rank(a.lang) - rank(b.lang)
+      || (b.rating || 0) - (a.rating || 0) || (b.votes || 0) - (a.votes || 0) || (b.w || 0) - (a.w || 0));
+    return { list: out, total };
+  }
+
+  function imgCard(x) {
+    const cur = draft[st.type] === x.url;
+    const cv = h('span', { class: 'cover ' + (poster() ? 'poster' : 'wide') });
+    const dims = h('span', { class: 'imgcard-m' }, x.w && x.h ? `${x.w} × ${x.h}` : '…');
+    const img = h('img', { src: x.thumb, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer' });
+    if (!(x.w && x.h)) img.addEventListener('load', () => { dims.textContent = `${img.naturalWidth} × ${img.naturalHeight}`; }, { once: true });
+    img.addEventListener('error', () => { img.replaceWith(h('span', { class: 'ph' }, icon('image'))); dims.textContent = 'não carregou'; }, { once: true });
+    cv.append(img);
+    if (x.lang !== undefined) cv.append(h('span', { class: 'ltag tl' }, x.lang ? x.lang.toUpperCase() : 'SEM TEXTO'));
+    if (cur) cv.append(h('span', { class: 'curmark' }, icon('check', 14)));
+    const srcName = x.src === 'tmdb' ? 'TheMovieDb' : 'The Open Movie Database';
+    return h('button', {
+      class: 'imgcard' + (cur ? ' current' : ''), type: 'button', 'aria-pressed': String(cur),
+      'aria-label': `${srcName}${x.lang ? ', idioma ' + x.lang : ''}${x.w ? `, ${x.w} por ${x.h}` : ''}`,
+      onclick: () => choose(x.url),
+    },
+    cv,
+    h('span', { class: 'imgcard-info' },
+      h('span', { class: 'imgcard-src' }, srcName),
+      dims,
+      x.src === 'tmdb' ? h('span', { class: 'imgcard-m' }, x.votes ? `★ ${(x.rating || 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} · ${fmtN(x.votes)} ${plural(x.votes, 'voto', 'votos')}` : 'sem votos') : null));
+  }
+
+  function paint() {
+    if (!gridEl) return;
+    const { list, total } = results();
+    const useTm = st.source !== 'omdb', useOm = st.source !== 'tmdb';
+    gridEl.className = 'imggrid' + (poster() ? '' : ' wide');
+    gridEl.replaceChildren(...list.map(imgCard));
+    langBox.hidden = st.source === 'omdb';
+    countEl.textContent = total ? (list.length < total ? `${fmtN(list.length)} de ${fmtN(total)}` : `${fmtN(total)} ${plural(total, 'imagem', 'imagens')}`) : '';
+    const line = (...c) => h('div', { class: 'status-line' }, ...c);
+    const lines = [];
+    if (st.tmLoading || st.omLoading) lines.push(line(...spinnerLine('Buscando imagens…')));
+    if (useTm && !TM.key) {
+      lines.push(line('Para buscar capas no TMDb, salve a chave gratuita em', h('button', { class: 'linkbtn', type: 'button', onclick: () => Sheet.push(settingsView()) }, 'Ajustes'), '.'));
+    } else if (useTm && !draft.tmdb.id) {
+      lines.push(line('Este remux não está ligado a um filme do TMDb.', h('button', { class: 'linkbtn', type: 'button', onclick: () => Sheet.push(filmSearchView('link', draft, formV)) }, 'Ligar ao TMDb')));
+    }
+    if (useTm && st.tmErr) {
+      const l = line(apiErrText(st.tmErr, 'TMDb'), h('button', { class: 'linkbtn', type: 'button', onclick: () => { st.tmFor = ''; load(); paint(); } }, 'Tentar de novo'));
+      l.classList.add('error');
+      lines.push(l);
+    }
+    if (useOm && OM.key && st.omErr && poster()) {
+      const l = line(apiErrText(st.omErr, 'OMDb'));
+      l.classList.add('error');
+      lines.push(l);
+    }
+    if (st.source === 'omdb' && !poster()) lines.push(line('O OMDb só tem capas (pôster), não fundos.'));
+    const fetched = (useTm && st.tm) || (useOm && poster() && OM.key && st.omFor);
+    if (!st.tmLoading && !st.omLoading && fetched && !list.length) {
+      const none = poster() ? 'Nenhuma capa' : 'Nenhum fundo';
+      const filtered = !st.all && st.source !== 'omdb' && total > 0;
+      lines.push(line(filtered ? `${none} em português, inglês ou sem texto.` : `${none} nessa fonte.`,
+        filtered ? h('button', { class: 'linkbtn', type: 'button', onclick: () => { st.all = true; store.set('img_all', '1'); Sheet.rerender(); } }, 'Mostrar todos os idiomas') : null));
+    }
+    statusEl.replaceChildren(...lines);
+  }
+
+  return v;
+}
+
+/* ---------- Salvar, excluir, ficha ---------- */
+async function saveRemux(draft) {
+  const now = new Date().toISOString();
+  const r = normalizeRemux({ ...draft, id: draft.id || uid(), createdAt: draft.createdAt || now, updatedAt: now });
+  await DB.put('remuxes', r);
+  const i = S.remuxes.findIndex(x => x.id === r.id);
+  if (i >= 0) S.remuxes[i] = r; else S.remuxes.push(r);
+  draft.id = r.id;
+  draft.createdAt = r.createdAt;
+  render();
+  ensurePersist();
+  return r;
+}
+
+async function removeRemux(id) {
+  const r = S.remuxes.find(x => x.id === id);
+  if (!r) { Sheet.close(); return; }
+  await DB.del('remuxes', id);
+  S.remuxes = S.remuxes.filter(x => x.id !== id);
+  render();
+  Sheet.close();
+  toast('Remux excluído', {
+    action: 'Desfazer', duration: 7000,
+    onAction: async () => { await DB.put('remuxes', r); S.remuxes.push(r); render(); toast('Remux restaurado'); },
+  });
+}
+
+function openRemux(id) {
+  const r = S.remuxes.find(x => x.id === id);
+  if (r) Sheet.show(remuxFormView(clone(r), 'edit'));
+}
+
+/* Texto pronto para colar num post ou num LEIA-ME do release. */
+function fichaText(r) {
+  const L = [];
+  const orig = differs(r.originalTitle, r.title) ? r.originalTitle : '';
+  L.push((r.title || 'Sem título') + (orig || r.year ? ` (${[orig, r.year].filter(Boolean).join(', ')})` : ''));
+  const vid = [r.video, [r.videoSource, r.edition].filter(Boolean).join(', ')].filter(Boolean);
+  if (vid.length) L.push('Vídeo: ' + vid.join(' · fonte: '));
+  if (r.audio.length) {
+    L.push('', 'Áudio');
+    r.audio.forEach((t, i) => L.push(`${i + 1}. ${[langInfo(t.lang).name, t.label, t.codec, t.origin && 'origem: ' + t.origin, t.sync && 'sincronia: ' + t.sync].filter(Boolean).join(' · ')}${t.isDefault ? ' [padrão]' : ''}`));
+  }
+  if (r.subs.length) {
+    L.push('', 'Legendas');
+    r.subs.forEach((t, i) => L.push(`${i + 1}. ${[langInfo(t.lang).name, t.kind, t.format, t.origin && 'origem: ' + t.origin, t.notes].filter(Boolean).join(' · ')}${t.isDefault ? ' [padrão]' : ''}`));
+  }
+  if (r.description.trim()) L.push('', 'O que foi feito', r.description.trim());
+  const extra = [
+    r.tools && 'Ferramentas: ' + r.tools,
+    r.fileName && 'Arquivo: ' + r.fileName + (r.size ? ` (${r.size})` : ''),
+    tmdbUrl(r.tmdb) && 'TMDb: ' + tmdbUrl(r.tmdb),
+    imdbUrl(r.tmdb) && 'IMDb: ' + imdbUrl(r.tmdb),
+    r.link && 'Link: ' + r.link,
+  ].filter(Boolean);
+  if (extra.length) L.push('', ...extra);
+  return L.join('\n');
+}
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* tenta o jeito antigo */ }
+  const ta = h('textarea', { readonly: true, style: 'position:fixed;top:0;left:0;opacity:0;pointer-events:none' });
+  ta.value = text;
+  document.body.append(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  ta.remove();
+  return ok;
+}
+
 /* ================= Tela: ajustes, backup ================= */
 function section(title, ic, ...children) {
   return h('section', { class: 'sect' }, h('h3', null, icon(ic, 18), title), ...children);
@@ -1889,7 +3186,27 @@ function settingsView() {
     h('p', { class: 'fine' }, 'Gere o token em ', h('a', { href: 'https://www.discogs.com/settings/developers', target: '_blank', rel: 'noopener' }, 'Discogs → Configurações → Desenvolvedores'), '. Ele fica salvo só neste aparelho e vai apenas para o Discogs.'));
     body.append(section('Discogs', 'key', form));
 
-    const n = S.items.length;
+    body.append(section('Filmes e capas (aba Remuxes)', 'film',
+      h('p', null, 'A aba Remuxes busca o filme e as capas no TMDb, a mesma base que o Jellyfin usa. A chave é gratuita.'),
+      keyForm({
+        id: 'set-tmdb', label: 'Chave da API do TMDb', value: TM.key, placeholder: 'Chave da API (ou token de leitura)',
+        status: TM.key ? 'Chave salva neste aparelho.' : 'Sem chave: dá para registrar remuxes e enviar capas do aparelho, mas não buscar no TMDb.',
+        test: testTmdb, remove: () => TM.setKey(''), removed: 'Chave do TMDb removida deste aparelho',
+      }),
+      h('p', { class: 'fine' }, 'Crie uma conta em ', h('a', { href: 'https://www.themoviedb.org/signup', target: '_blank', rel: 'noopener' }, 'themoviedb.org'),
+        ', abra ', h('a', { href: 'https://www.themoviedb.org/settings/api', target: '_blank', rel: 'noopener' }, 'Configurações → API'),
+        ', peça uma chave para uso pessoal e cole aqui a “Chave da API”. Ela fica só neste aparelho e vai apenas para o TMDb.'),
+      keyForm({
+        id: 'set-omdb', label: 'Chave do OMDb (opcional)', value: OM.key, placeholder: 'Chave do The Open Movie Database',
+        status: OM.key ? 'Chave salva: o OMDb aparece como fonte extra de capas.' : 'Opcional: põe o The Open Movie Database como fonte extra de capas, como no Jellyfin.',
+        test: testOmdb, remove: () => OM.setKey(''), removed: 'Chave do OMDb removida deste aparelho',
+      }),
+      h('p', { class: 'fine' }, 'Peça a chave grátis em ', h('a', { href: 'https://www.omdbapi.com/apikey.aspx', target: '_blank', rel: 'noopener' }, 'omdbapi.com'),
+        ' e clique no link de ativação que chega por e-mail.')));
+
+    const n = S.items.length + S.remuxes.length;
+    const ni = S.items.length, nr = S.remuxes.length;
+    const what = [ni ? `${fmtN(ni)} ${plural(ni, 'digitalização', 'digitalizações')}` : '', nr ? `${fmtN(nr)} ${plural(nr, 'remux', 'remuxes')}` : ''].filter(Boolean).join(' e ');
     const last = store.get('last_export');
     // sem "accept": no iPhone ele às vezes deixa arquivos .json cinza no seletor; o conteúdo é validado na importação
     const fileIn = h('input', { type: 'file', hidden: true, id: 'import-file' });
@@ -1899,14 +3216,16 @@ function settingsView() {
       if (f) { await importFile(f); Sheet.rerender(); }
     });
     body.append(section('Backup', 'download',
-      h('p', null, `${n ? `Seus ${fmtN(n)} ${plural(n, 'item fica salvo', 'itens ficam salvos')}` : 'Os dados ficam salvos'} só neste aparelho. Exporte um backup de vez em quando. Para levar o acervo a outro aparelho, importe o arquivo lá.`),
+      h('p', null, `${what ? `Este aparelho guarda ${what}.` : 'Os dados ficam salvos só neste aparelho.'} Exporte um backup de vez em quando. Para levar o acervo a outro aparelho, importe o arquivo lá.`),
       h('p', { class: 'msg' }, last ? `Último backup: ${fmtDay(last)}.` : 'Nenhum backup exportado ainda.'),
       h('div', { class: 'btnrow' },
         h('button', { class: 'btn btn-primary', type: 'button', disabled: !n || null, onclick: async () => { await exportJSON(); Sheet.rerender(); } }, icon('download', 18), 'Exportar backup'),
-        h('button', { class: 'btn', type: 'button', disabled: !n || null, onclick: exportCSV }, 'Exportar planilha (CSV)'),
         h('button', { class: 'btn', type: 'button', onclick: () => fileIn.click() }, icon('upload', 18), 'Importar backup')),
+      h('div', { class: 'btnrow' },
+        h('button', { class: 'btn', type: 'button', disabled: !ni || null, onclick: exportCSV }, 'Planilha das digitalizações (CSV)'),
+        h('button', { class: 'btn', type: 'button', disabled: !nr || null, onclick: exportRemuxCSV }, 'Planilha dos remuxes (CSV)')),
       fileIn,
-      h('p', { class: 'fine' }, 'A importação junta os itens: o que não existe aqui é adicionado, e o que existe nos dois lados fica com a versão editada por último.')));
+      h('p', { class: 'fine' }, 'O backup leva as duas abas, inclusive as capas enviadas do aparelho. A importação junta os itens: o que não existe aqui é adicionado, e o que existe nos dois lados fica com a versão editada por último.')));
 
     if (!isStandalone()) {
       body.append(section('Usar como app', 'phone',
@@ -1920,6 +3239,7 @@ function settingsView() {
     else persist.textContent = 'indisponível';
     body.append(section('Sobre', 'info',
       h('p', null, `Acervo ${VERSION}. Dados de discos fornecidos pelo `, h('a', { href: 'https://www.discogs.com', target: '_blank', rel: 'noopener' }, 'Discogs'), '.'),
+      tmdbCredit(),
       h('p', { class: 'fine' }, 'Protegido contra limpeza automática do navegador: ', persist, '.')));
   };
   return v;
@@ -1953,7 +3273,8 @@ function byCreated(a, b) { return (a.createdAt || '').localeCompare(b.createdAt 
 
 async function exportJSON() {
   const items = S.items.slice().sort(byCreated);
-  const data = { app: 'acervo', schema: 1, version: VERSION, exportedAt: new Date().toISOString(), count: items.length, items };
+  const remuxes = S.remuxes.slice().sort(byCreated);
+  const data = { app: 'acervo', schema: 2, version: VERSION, exportedAt: new Date().toISOString(), count: items.length, remuxCount: remuxes.length, items, remuxes };
   const ok = await saveFile(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `acervo-backup-${todayISO()}.json`);
   if (ok) { store.set('last_export', new Date().toISOString()); toast('Backup exportado'); renderNudge(); }
 }
@@ -1969,46 +3290,112 @@ function exportCSV() {
     ['Release ID', it => it.discogs.releaseId || ''], ['Master ID', it => it.discogs.masterId || ''],
     ['Criado em', it => it.createdAt], ['Atualizado em', it => it.updatedAt],
   ];
+  const items = S.items.slice().sort((a, b) => collator.compare(a.artist, b.artist) || collator.compare(a.title, b.title));
+  saveFile(csvBlob(cols, items), `acervo-${todayISO()}.csv`).then(ok => { if (ok) toast('Planilha exportada'); });
+}
+
+function csvBlob(cols, rows) {
   const esc = val => {
     let s = val == null ? '' : String(val);
     if (/^[=+@]/.test(s)) s = "'" + s;
     return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
-  const items = S.items.slice().sort((a, b) => collator.compare(a.artist, b.artist) || collator.compare(a.title, b.title));
-  const lines = [cols.map(c => c[0]).join(';'), ...items.map(it => cols.map(c => esc(c[1](it))).join(';'))];
-  saveFile(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv' }), `acervo-${todayISO()}.csv`).then(ok => { if (ok) toast('Planilha exportada'); });
+  const lines = [cols.map(c => c[0]).join(';'), ...rows.map(it => cols.map(c => esc(c[1](it))).join(';'))];
+  return new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv' });
+}
+
+function exportRemuxCSV() {
+  const tracks = (list, kind) => list.map(t => { const sm = trackSummary(t, kind); return `${sm.L.short} ${sm.title}${sm.meta ? ` (${sm.meta})` : ''}${t.isDefault ? ' [padrão]' : ''}`; }).join(' | ');
+  const cols = [
+    ['Título', r => r.title], ['Título original', r => r.originalTitle], ['Ano', r => r.year || ''],
+    ['Status', r => statusLabel(r.status)], ['Data do remux', r => fmtDate(r.date)],
+    ['Fonte do vídeo', r => r.videoSource], ['Edição do disco', r => r.edition], ['Vídeo', r => r.video],
+    ['Idiomas do áudio', r => remuxLangs(r).join(' ')], ['Faixas de áudio', r => tracks(r.audio, 'audio')],
+    ['Legendas', r => tracks(r.subs, 'subs')], ['Descrição do que fiz', r => r.description], ['Ferramentas', r => r.tools],
+    ['Nome do arquivo', r => r.fileName], ['Tamanho', r => r.size], ['Onde está', r => r.location], ['Link', r => r.link],
+    ['TMDb', r => tmdbUrl(r.tmdb)], ['IMDb', r => imdbUrl(r.tmdb)],
+    ['Criado em', r => r.createdAt], ['Atualizado em', r => r.updatedAt],
+  ];
+  const rows = S.remuxes.slice().sort((a, b) => collator.compare(a.title, b.title) || (a.year || 0) - (b.year || 0));
+  saveFile(csvBlob(cols, rows), `acervo-remuxes-${todayISO()}.csv`).then(ok => { if (ok) toast('Planilha dos remuxes exportada'); });
 }
 
 async function importFile(file) {
   let data;
   try { data = JSON.parse(await file.text()); } catch (e) { toast('Esse arquivo não é um backup do Acervo (não consegui ler o JSON).'); return; }
   const arr = Array.isArray(data) ? data : data && Array.isArray(data.items) ? data.items : null;
-  if (!arr) { toast('Esse arquivo não tem itens do Acervo.'); return; }
-  const map = new Map(S.items.map(i => [i.id, i]));
-  const toPut = [];
+  const rarr = data && !Array.isArray(data) && Array.isArray(data.remuxes) ? data.remuxes : null;
+  if (!arr && !rarr) { toast('Esse arquivo não tem itens do Acervo.'); return; }
   let added = 0, updated = 0, kept = 0;
-  for (const raw of arr) {
-    if (!raw || typeof raw !== 'object') continue;
-    const it = normalizeItem(raw);
-    if (!it.title) continue;
-    const cur = map.get(it.id);
-    if (!cur) { added++; toPut.push(it); map.set(it.id, it); }
-    else if ((it.updatedAt || '') > (cur.updatedAt || '')) { updated++; toPut.push(it); map.set(it.id, it); }
-    else kept++;
-  }
-  try { await DB.putMany(toPut); } catch (e) { toast('Não deu para gravar a importação neste navegador.'); return; }
-  S.items = [...map.values()];
+  const merge = (current, list, normalize) => {
+    const map = new Map(current.map(i => [i.id, i]));
+    const toPut = [];
+    for (const raw of list || []) {
+      if (!raw || typeof raw !== 'object') continue;
+      const it = normalize(raw);
+      if (!it.title) continue;
+      const cur = map.get(it.id);
+      if (!cur) { added++; toPut.push(it); map.set(it.id, it); }
+      else if ((it.updatedAt || '') > (cur.updatedAt || '')) { updated++; toPut.push(it); map.set(it.id, it); }
+      else kept++;
+    }
+    return { all: [...map.values()], toPut };
+  };
+  const mi = merge(S.items, arr, normalizeItem);
+  const mr = merge(S.remuxes, rarr, normalizeRemux);
+  try {
+    await DB.putMany('items', mi.toPut);
+    await DB.putMany('remuxes', mr.toPut);
+  } catch (e) { toast('Não deu para gravar a importação neste navegador.'); return; }
+  S.items = mi.all;
+  S.remuxes = mr.all;
   render();
   ensurePersist();
   toast(`Importação: ${fmtN(added)} ${plural(added, 'novo', 'novos')}, ${fmtN(updated)} ${plural(updated, 'atualizado', 'atualizados')}${kept ? `, ${fmtN(kept)} já em dia` : ''}.`, { duration: 6000 });
 }
 
 /* ================= Início ================= */
-function openAdd() { Sheet.show(searchView()); }
+function openAdd() { Sheet.show(S.tab === 'remux' ? filmSearchView('new') : searchView()); }
 function openSettings() { Sheet.show(settingsView()); }
+
+const SORTS = {
+  digi: [['recent', 'Atualizados'], ['added', 'Adicionados'], ['artist', 'Artista'], ['title', 'Título'], ['year', 'Ano'], ['date', 'Data da digitalização']],
+  remux: [['recent', 'Atualizados'], ['added', 'Adicionados'], ['title', 'Título'], ['year', 'Ano'], ['date', 'Data do remux']],
+};
+function paintControls() {
+  const remux = S.tab === 'remux';
+  const Fs = F();
+  const fq = $('#filter-q');
+  fq.value = Fs.q;
+  fq.placeholder = remux ? 'Filtrar por título, idioma, dublagem, notas…' : 'Filtrar por título, artista, selo, notas…';
+  $('#medium-chips').setAttribute('aria-label', remux ? 'Filtrar por idioma do áudio' : 'Filtrar por mídia');
+  const sortSel = $('#sort');
+  const opts = SORTS[remux ? 'remux' : 'digi'];
+  sortSel.replaceChildren(...opts.map(([v, l]) => h('option', { value: v }, l)));
+  if (!opts.some(o => o[0] === Fs.sort)) Fs.sort = 'recent';
+  sortSel.value = Fs.sort;
+  $('#view-list').setAttribute('aria-pressed', String(Fs.view === 'list'));
+  $('#view-grid').setAttribute('aria-pressed', String(Fs.view === 'grid'));
+  $('#fab').lastChild.textContent = remux ? ' Adicionar remux' : ' Adicionar';
+  $('#list-section').setAttribute('aria-label', remux ? 'Remuxes' : 'Digitalizações');
+  for (const [id, on] of [['#tab-digi', !remux], ['#tab-remux', remux]]) {
+    $(id).setAttribute('aria-selected', String(on));
+    $(id).tabIndex = on ? 0 : -1;
+  }
+  $('#main-panel').setAttribute('aria-labelledby', remux ? 'tab-remux' : 'tab-digi');
+}
+function setTab(tab) {
+  if (S.tab === tab) return;
+  S.tab = tab;
+  store.set('tab', tab);
+  paintControls();
+  render();
+  window.scrollTo(0, 0);
+}
 function setView(view) {
-  S.view = view;
-  store.set('view', view);
+  const Fs = F();
+  Fs.view = view;
+  store.set(S.tab === 'remux' ? 'rview' : 'view', view);
   $('#view-list').setAttribute('aria-pressed', String(view === 'list'));
   $('#view-grid').setAttribute('aria-pressed', String(view === 'grid'));
   render();
@@ -2017,27 +3404,45 @@ function setView(view) {
 async function init() {
   $('#btn-settings').addEventListener('click', openSettings);
   $('#fab').addEventListener('click', openAdd);
+  $('#tab-digi').addEventListener('click', () => setTab('digi'));
+  $('#tab-remux').addEventListener('click', () => setTab('remux'));
+  $('.tabs').addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    setTab(S.tab === 'remux' ? 'digi' : 'remux');
+    $(S.tab === 'remux' ? '#tab-remux' : '#tab-digi').focus();
+  });
   const fq = $('#filter-q');
-  fq.addEventListener('input', debounce(() => { S.q = fq.value; render(); }, 120));
+  fq.addEventListener('input', debounce(() => { F().q = fq.value; render(); }, 120));
   const sortSel = $('#sort');
-  sortSel.value = S.sort;
-  if (sortSel.value !== S.sort) { S.sort = 'recent'; sortSel.value = 'recent'; }
-  sortSel.addEventListener('change', () => { S.sort = sortSel.value; store.set('sort', S.sort); render(); });
+  sortSel.addEventListener('change', () => {
+    F().sort = sortSel.value;
+    store.set(S.tab === 'remux' ? 'rsort' : 'sort', sortSel.value);
+    render();
+  });
   $('#view-list').addEventListener('click', () => setView('list'));
   $('#view-grid').addEventListener('click', () => setView('grid'));
-  $('#view-list').setAttribute('aria-pressed', String(S.view === 'list'));
-  $('#view-grid').setAttribute('aria-pressed', String(S.view === 'grid'));
-  $('#clear-filters').addEventListener('click', () => { S.q = ''; fq.value = ''; S.medium = ''; S.status = ''; render(); });
+  $('#clear-filters').addEventListener('click', () => {
+    fq.value = '';
+    if (S.tab === 'remux') { R.q = ''; R.lang = ''; R.status = ''; } else { S.q = ''; S.medium = ''; S.status = ''; }
+    render();
+  });
   $('#sheet-close').addEventListener('click', () => Sheet.requestClose());
   $('#sheet-back').addEventListener('click', () => Sheet.back());
   document.addEventListener('keydown', onKey);
+  paintControls();
 
   await DB.open();
   $('#storage-warn').hidden = !DB.mem;
   try {
-    S.items = (await DB.all()).map(normalizeItem);
+    S.items = (await DB.all('items')).map(normalizeItem);
   } catch (e) {
     S.items = [];
+  }
+  try {
+    S.remuxes = (await DB.all('remuxes')).map(normalizeRemux);
+  } catch (e) {
+    S.remuxes = [];
   }
   render();
 

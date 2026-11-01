@@ -1,6 +1,6 @@
 /* Acervo: guarda os arquivos do app para abrir sem internet.
-   Busca e capas do Discogs vão direto para a rede. */
-const CACHE = 'acervo-v2';
+   Busca e capas (Discogs, TMDb, OMDb) vão direto para a rede. */
+const CACHE = 'acervo-v3';
 const SHELL = [
   './',
   'index.html',
@@ -33,7 +33,7 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return; // Discogs: sempre pela rede
+  if (url.origin !== self.location.origin) return; // Discogs, TMDb, OMDb: sempre pela rede
 
   if (req.mode === 'navigate') {
     // Página: rede primeiro (para pegar atualizações), cópia guardada se estiver offline.

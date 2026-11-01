@@ -1,6 +1,6 @@
 # Acervo
 
-Tracker pessoal das suas digitalizações de LPs, CDs, DVDs, fitas e afins, com busca no Discogs. Roda no navegador, instala na tela inicial do iPhone e abre sem internet para consultar o acervo.
+Tracker pessoal das suas digitalizações de LPs, CDs, DVDs, fitas e afins, com busca no Discogs, e dos seus BDRemuxes (aba **Remuxes**), com capas do TMDb no estilo do Jellyfin. Roda no navegador, instala na tela inicial do iPhone e abre sem internet para consultar o acervo.
 
 ## 1. Publicar no GitHub Pages (uma vez, no computador)
 
@@ -38,13 +38,31 @@ O token fica salvo só no aparelho e é enviado apenas ao Discogs. Sem token, co
 - **Ficha técnica**: formato do arquivo, equipamento, estado da mídia (escala Goldmine, a mesma do Discogs), onde está o arquivo e notas. Os campos sugerem o que você já usou antes.
 - **Mesmo álbum em outra mídia**: abra o item e use *Duplicar para outra mídia*.
 
+## Aba Remuxes
+
+Para registrar os BDRemuxes que você montou (por exemplo, juntando uma dublagem de uma fonte ruim a um vídeo melhor com o EternalDub).
+
+**Conectar o TMDb (uma vez):** crie uma conta em [themoviedb.org](https://www.themoviedb.org/signup), abra [Configurações → API](https://www.themoviedb.org/settings/api), peça uma chave para uso pessoal e cole a **Chave da API** em **Ajustes → Filmes e capas**. Opcional: uma chave do [OMDb](https://www.omdbapi.com/apikey.aspx) acrescenta o The Open Movie Database como segunda fonte de capas, como no Jellyfin.
+
+- **Adicionar**: na aba Remuxes, toque em *Adicionar remux* e busque o filme pelo nome (ano entre parênteses filtra: `Transformers (1986)`), pelo link do TMDb ou pelo código do IMDb (`tt0092106`). Também dá para adicionar sem o TMDb.
+- **Capa e fundo**: toque na capa. A tela de imagens funciona como o *Buscar imagens* do Jellyfin: fonte (TheMovieDb, OMDb), tipo (capa ou fundo), *Todos os idiomas*, resolução e votos de cada imagem. Também dá para **enviar uma imagem do aparelho** (scan da capa, arte própria) ou colar o link de uma imagem.
+- **Vídeo**: fonte (UHD Blu-ray, Blu-ray…), edição do disco e codec/resolução.
+- **Áudio**: uma linha por faixa, na ordem do MKV: idioma, descrição (ex.: *Dublagem Herbert Richers*), codec e canais, de onde veio e o ajuste de sincronia (atraso, cortes, fps). Marque a faixa padrão.
+- **Legendas**: idioma, tipo (completa, forçada, SDH), formato (SRT, PGS, ASS…) e origem.
+- **O que foi feito**: descrição livre e ferramentas usadas.
+- **Copiar ficha**: ao abrir um remux salvo, gera um texto com tudo isso, pronto para colar num post.
+
+As capas enviadas do aparelho ficam guardadas nele e vão junto no backup. As do TMDb e do OMDb são carregadas da internet.
+
 ## Backup e outros aparelhos
 
 Cada aparelho guarda os próprios dados. Em **Ajustes → Backup**:
 
 - **Exportar backup** gera um arquivo `.json` com tudo. No iPhone, salve em Arquivos ou no iCloud Drive.
 - **Importar backup** junta esse arquivo ao acervo do aparelho: itens novos entram e, quando o mesmo item existe nos dois lados, fica a versão editada por último. É assim que se leva o acervo do iPhone para o computador e vice-versa.
-- **Exportar planilha (CSV)** abre no Excel ou no Google Planilhas.
+- **Planilha das digitalizações / dos remuxes (CSV)** abre no Excel ou no Google Planilhas.
+
+O backup inclui as duas abas. Backups feitos antes da aba Remuxes continuam importando normalmente.
 
 ## Atualizar o app
 
@@ -52,4 +70,4 @@ Substitua os arquivos no repositório pelos da nova versão. O app se atualiza s
 
 ## Créditos
 
-Dados de discos fornecidos pelo [Discogs](https://www.discogs.com). Fontes Archivo e Courier Prime sob a SIL Open Font License (licenças na pasta `fonts`).
+Dados de discos fornecidos pelo [Discogs](https://www.discogs.com). Dados e imagens de filmes do [TMDb](https://www.themoviedb.org); este app usa a API do TMDb, mas não é endossado nem certificado por ele. Capas extras do [OMDb](https://www.omdbapi.com). Fontes Archivo e Courier Prime sob a SIL Open Font License (licenças na pasta `fonts`).
