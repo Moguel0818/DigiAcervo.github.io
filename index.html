@@ -406,6 +406,16 @@ input[type="date"].inp { min-width: 0; }
 .album-a { color: var(--ink-2); overflow-wrap: anywhere; }
 .album-m { font-family: var(--font-mono); font-size: .84rem; color: var(--ink-3); overflow-wrap: anywhere; }
 .album-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: .9rem; font-weight: 600; width: fit-content; }
+.album-links { display: flex; flex-wrap: wrap; gap: 0 16px; }
+.art-btn { position: relative; display: block; padding: 0; border: 0; background: none; border-radius: 4px; min-width: 0; }
+.art-btn .cover { box-shadow: var(--shadow-1); }
+.art-btn:hover .hero-edit { background: var(--accent); color: var(--accent-ink); }
+/* Capas das digitalizações: seções por fonte */
+.artsearch { display: flex; gap: 8px; }
+.artsearch .inp { flex: 1; min-width: 0; }
+.cover .same { position: absolute; left: 6px; bottom: 6px; background: var(--st-concluido); color: #fff; }
+.imgcard-t { font-size: .84rem; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; padding-inline: 4px; }
+.sect-c { margin-left: 2px; font-family: var(--font-mono); font-size: .8rem; font-weight: 400; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .edition {
   display: flex; align-items: center; gap: 12px; padding: 12px 14px;
   border: 1px dashed var(--rule); border-radius: 12px;
@@ -666,7 +676,7 @@ details.albumdata[open] > summary svg { transform: none; }
 'use strict';
 
 /* ================= Constantes ================= */
-const VERSION = '1.2';
+const VERSION = '1.3';
 
 const MEDIA = [
   { id: 'vinil', label: 'Vinil', dg: 'Vinyl', icon: 'vinyl',
@@ -894,6 +904,9 @@ function normalizeItem(r) {
     formatText: s(r.formatText, 300),
     thumb: safeImg(r.thumb),
     cover: safeImg(r.cover),
+    // capa escolhida pelo usuário (Cover Art Archive, Discogs, iTunes, enviada ou link); a do Discogs fica guardada embaixo
+    art: safeArt(r.art),
+    artFull: safeArt(r.art) ? safeHttp(String(r.artFull || '').replace(/^http:\/\//, 'https://')) : '',
     medium: MEDIUM[r.medium] ? r.medium : 'outro',
     mediumDetail: s(r.mediumDetail, 120),
     status: STATUS_IDS.includes(r.status) ? r.status : 'concluido',
@@ -1168,7 +1181,7 @@ function sortItems(arr) {
 
 function coverEl(it, size) {
   const box = h('span', { class: 'cover' });
-  const src = size === 'large' ? (it.cover || it.thumb) : (it.thumb || it.cover);
+  const src = it.art || (size === 'large' ? (it.cover || it.thumb) : (it.thumb || it.cover));
   const ph = () => {
     const p = h('span', { class: 'ph' }, h('b', null, initials(it)), icon((MEDIUM[it.medium] || {}).icon || 'vinyl'));
     p.style.setProperty('--h', hashHue((it.artist || '') + '|' + (it.title || '')));
@@ -1444,7 +1457,7 @@ function blankDraft() {
   return {
     id: null, createdAt: null,
     discogs: { type: null, releaseId: null, masterId: null, url: '' },
-    title: '', artist: '', year: null, country: '', label: '', catno: '', formatText: '', thumb: '', cover: '',
+    title: '', artist: '', year: null, country: '', label: '', catno: '', formatText: '', thumb: '', cover: '', art: '', artFull: '',
     medium: '', mediumDetail: '', status: 'concluido', date: '', fileFormat: '', equipment: '', grade: '', location: '', notes: '',
   };
 }
@@ -1656,19 +1669,23 @@ async function enrichDraft(draft, view) {
 }
 
 /* ================= Tela: formulário da digitalização ================= */
-function albumCard(draft) {
+function albumCard(draft, formV) {
   const el = h('div', { class: 'album' });
   el.update = () => {
     const meta = [draft.year, draft.country, [draft.label, draft.catno].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
     const kind = draft.discogs.type === 'master' && !draft.discogs.releaseId ? 'Álbum · todas as versões' : draft.formatText;
+    const openArt = () => Sheet.push(artView(draft, formV));
     el.replaceChildren(
-      coverEl(draft, 'large'),
+      h('button', { class: 'art-btn', type: 'button', 'aria-label': 'Trocar a capa', onclick: openArt },
+        coverEl(draft, 'large'), h('span', { class: 'hero-edit' }, icon('pencil', 14))),
       h('div', { class: 'album-info' },
         h('p', { class: 'album-t' }, draft.title || 'Sem título'),
         h('p', { class: 'album-a' }, draft.artist || 'Artista não informado'),
         meta ? h('p', { class: 'album-m' }, meta) : null,
         kind ? h('p', { class: 'album-m' }, kind) : null,
-        draft.discogs.url ? h('a', { class: 'album-link', href: draft.discogs.url, target: '_blank', rel: 'noopener' }, 'Ver no Discogs', icon('external', 14)) : null));
+        h('div', { class: 'album-links' },
+          draft.discogs.url ? h('a', { class: 'album-link', href: draft.discogs.url, target: '_blank', rel: 'noopener' }, 'Ver no Discogs', icon('external', 14)) : null,
+          h('button', { class: 'linkbtn album-link', type: 'button', onclick: openArt }, icon('image', 16), draft.art ? 'Capa escolhida · trocar' : 'Trocar capa'))));
   };
   el.update();
   return el;
@@ -1751,7 +1768,7 @@ function formView(draft, mode) {
 
   v.render = (body, foot) => {
     parts.album = albumFields(draft, () => { parts.card.update(); touch(); });
-    parts.card = albumCard(draft);
+    parts.card = albumCard(draft, v);
     parts.owned = ownedNote(draft) || h('div', { hidden: true });
     parts.edition = editionBlock(draft, v) || h('div', { hidden: true });
 
@@ -1806,7 +1823,7 @@ function formView(draft, mode) {
     notes.addEventListener('input', () => { draft.notes = notes.value; touch(); });
     const notesField = h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'f-notes' }, 'Notas'), notes);
 
-    if (parts.album.manual) body.append(parts.album.el);
+    if (parts.album.manual) body.append(parts.card, parts.album.el);
     else body.append(parts.card, parts.owned, parts.edition);
     body.append(medField, parts.detail.el, stField, dateField, parts.fmt.el, parts.equip.el, gradeField, loc.el, notesField);
     if (!parts.album.manual) body.append(parts.album.el);
@@ -1859,7 +1876,7 @@ async function duplicate(draft, validate) {
   if (!validate()) return;
   await saveDraft(draft);
   const d = blankDraft();
-  for (const k of ['title', 'artist', 'year', 'country', 'label', 'catno', 'formatText', 'thumb', 'cover']) d[k] = draft[k];
+  for (const k of ['title', 'artist', 'year', 'country', 'label', 'catno', 'formatText', 'thumb', 'cover', 'art', 'artFull']) d[k] = draft[k];
   d.discogs = { ...draft.discogs };
   d.status = 'fila';
   Sheet.replace(formView(d, 'new'));
@@ -1994,6 +2011,407 @@ function versionsView(draft, formV) {
     if (st.error) { statusEl.className = 'status-line error'; statusEl.append(errText(st.error)); return; }
     if (!st.list.length) { statusEl.append('Nenhuma edição com esses filtros.'); return; }
     statusEl.append(`${fmtN(st.list.length)} de ${fmtN(st.total)} ${plural(st.total, 'edição', 'edições')}`);
+  }
+
+  return v;
+}
+
+/* =====================================================================
+   CAPAS DAS DIGITALIZAÇÕES
+   Como no EAC/Picard: acha a edição no MusicBrainz e pega a capa no Cover
+   Art Archive (a do mesmo código de barras ou nº de catálogo vem marcada).
+   Também mostra todas as imagens da sua edição no Discogs, capas de outras
+   edições e a do iTunes (em alta). Dá para enviar a própria ou colar um link.
+   ===================================================================== */
+const httpsUrl = u => String(u || '').replace(/^http:\/\//i, 'https://');
+const CAA_TYPES = {
+  Front: 'Frente', Back: 'Verso', Booklet: 'Encarte', Medium: 'Disco', Obi: 'Obi', Spine: 'Lombada', Tray: 'Bandeja',
+  Track: 'Faixa', Liner: 'Envelope', Sticker: 'Adesivo', Poster: 'Pôster', Watermark: 'Marca d’água', Matrix: 'Matriz',
+  Top: 'Topo', Bottom: 'Base', Panel: 'Painel', Raw: 'Sem tratamento', Other: 'Outra',
+};
+const lucene = s => String(s || '').replace(/[\\"]/g, ' ').replace(/\s+/g, ' ').trim();
+const looseQuery = s => String(s || '').replace(/[+\-&|!(){}[\]^"~*?:\\/]/g, ' ').replace(/\s+/g, ' ').trim();
+const fileSafe = s => String(s || '').replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, ' ').trim().slice(0, 120) || 'capa';
+
+const MB = {
+  async search(query) {
+    if (navigator.onLine === false) throw { code: 'offline' };
+    const url = new URL('https://musicbrainz.org/ws/2/release/');
+    url.searchParams.set('query', query);
+    url.searchParams.set('fmt', 'json');
+    url.searchParams.set('limit', '25');
+    let res;
+    try { res = await fetch(url.toString()); } catch (e) { throw { code: 'network' }; }
+    if (res.status === 503) throw { code: 'rate' };
+    if (!res.ok) throw { code: 'http', status: res.status };
+    const d = await res.json();
+    return (d.releases || []).map(mbRelease);
+  },
+  // Imagens de uma edição no Cover Art Archive ([] se não tiver nenhuma).
+  async images(mbid) {
+    let res;
+    try { res = await fetch(`https://coverartarchive.org/release/${mbid}/`); } catch (e) { throw { code: 'network' }; }
+    if (res.status === 404) return [];
+    if (!res.ok) throw { code: 'http', status: res.status };
+    const d = await res.json();
+    return (d.images || []).filter(i => i && i.image).map(i => {
+      const th = i.thumbnails || {};
+      return {
+        types: Array.isArray(i.types) ? i.types : [],
+        thumb: httpsUrl(th['250'] || th.small || i.image),
+        art: httpsUrl(th['500'] || th.large || i.image),
+        full: httpsUrl(i.image),
+      };
+    });
+  },
+};
+function mbRelease(r) {
+  const ac = (r['artist-credit'] || []).map(a => (a.name || (a.artist && a.artist.name) || '') + (a.joinphrase || '')).join('');
+  const li = (r['label-info'] || []).find(x => x && (x.label || x['catalog-number'])) || {};
+  return {
+    id: r.id, title: r.title || '', artist: ac, year: parseInt(r.date, 10) || null, country: r.country || '',
+    barcode: String(r.barcode || '').replace(/\D/g, ''), label: (li.label && li.label.name) || '', catno: li['catalog-number'] || '',
+    format: uniq((r.media || []).map(m => m.format)).join(' + '), score: r.score || 0,
+  };
+}
+
+/* O iTunes não libera CORS; a busca dele só funciona via JSONP (a resposta vem como um script). */
+let jsonpSeq = 0;
+function jsonp(url, timeout = 12000) {
+  return new Promise((resolve, reject) => {
+    const name = 'acervoJsonp' + Date.now().toString(36) + (jsonpSeq++);
+    const s = document.createElement('script');
+    let timer;
+    const done = () => { clearTimeout(timer); window[name] = () => {}; s.remove(); };
+    timer = setTimeout(() => { done(); reject({ code: 'network' }); }, timeout);
+    window[name] = data => { done(); resolve(data); };
+    s.onerror = () => { done(); reject({ code: 'network' }); };
+    s.referrerPolicy = 'no-referrer';
+    s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + name;
+    document.head.append(s);
+  });
+}
+const IT_STORES = { Japan: 'jp', Brazil: 'br', UK: 'gb', Germany: 'de', France: 'fr', Italy: 'it', Spain: 'es', Canada: 'ca', Australia: 'au', Mexico: 'mx', Argentina: 'ar', Portugal: 'pt' };
+const IT = {
+  async search(term, country) {
+    if (navigator.onLine === false) throw { code: 'offline' };
+    const url = new URL('https://itunes.apple.com/search');
+    url.searchParams.set('term', term);
+    url.searchParams.set('media', 'music');
+    url.searchParams.set('entity', 'album');
+    url.searchParams.set('limit', '25');
+    url.searchParams.set('country', country);
+    const d = await jsonp(url.toString());
+    const size = (u, px) => (/\/\d+x\d+bb(\.\w+)$/.test(u) ? u.replace(/\/\d+x\d+bb(\.\w+)$/, `/${px}x${px}bb$1`) : u);
+    return ((d && d.results) || []).filter(r => typeof r.artworkUrl100 === 'string' && /^https:\/\//.test(r.artworkUrl100)).map(r => ({
+      title: r.collectionName || '', artist: r.artistName || '', year: parseInt(r.releaseDate, 10) || null,
+      thumb: size(r.artworkUrl100, 300), art: size(r.artworkUrl100, 600), full: size(r.artworkUrl100, 3000),
+    }));
+  },
+};
+
+/* Todas as imagens da edição no Discogs, mais o código de barras e o nº de catálogo (para achar a mesma edição no MusicBrainz). */
+async function dgReleaseArt(id) {
+  const r = await DG.req(`/releases/${id}`);
+  const imgs = (Array.isArray(r.images) ? r.images : []).filter(i => goodImg(i.uri));
+  const bc = (Array.isArray(r.identifiers) ? r.identifiers : []).map(x => (x && /barcode/i.test(x.type) ? String(x.value || '').replace(/\D/g, '') : '')).find(v => v.length >= 8 && v.length <= 14);
+  const lab = (Array.isArray(r.labels) && r.labels[0]) || {};
+  return {
+    images: imgs.map(i => ({ type: i.type, thumb: goodImg(i.uri150) || i.uri, art: i.uri, full: i.uri, w: i.width, h: i.height })),
+    barcode: bc || '',
+    catno: lab.catno && String(lab.catno).toLowerCase() !== 'none' ? String(lab.catno) : '',
+  };
+}
+
+async function downloadArt(url, base) {
+  let blob = null;
+  try {
+    const res = await fetch(url, { referrerPolicy: 'no-referrer' });
+    if (res.ok) blob = await res.blob();
+  } catch (e) { blob = null; }
+  if (!blob || !/^image\//.test(blob.type)) {
+    // o site da imagem não deixa baixar direto daqui: abre numa aba para salvar por lá
+    toast('Esse site não deixa baixar a imagem direto pelo app.', { action: 'Abrir imagem', duration: 9000, onAction: () => window.open(url, '_blank', 'noopener') });
+    return;
+  }
+  const ext = /png/.test(blob.type) ? 'png' : /webp/.test(blob.type) ? 'webp' : 'jpg';
+  if (await saveFile(blob, `${fileSafe(base)}.${ext}`)) toast('Capa baixada');
+}
+
+/* ---------- Tela: capa da digitalização ---------- */
+function artView(draft, formV) {
+  const defQ = () => [draft.artist, draft.title].filter(Boolean).join(' ');
+  const st = {
+    q: defQ(), edited: false,
+    source: ['all', 'caa', 'discogs', 'itunes'].includes(store.get('art_src')) ? store.get('art_src') : 'all',
+    every: store.get('art_every') === '1', // todas as imagens (verso, encarte, obi…) em vez de só a frente
+    mine: {}, mb: {}, dgs: {}, it: {}, caa: new Map(),
+  };
+  const v = { title: 'Capa' };
+  let secs = {};
+  const want = src => st.source === 'all' || st.source === src;
+  const edInfo = () => st.mine.data || {};
+  const flat = s => norm(s).replace(/[\s-]/g, '');
+
+  v.render = body => {
+    const input = h('input', { class: 'inp', type: 'search', id: 'art-q', value: st.q, placeholder: 'Artista e álbum', enterkeyhint: 'search', autocomplete: 'off', spellcheck: 'false' });
+    const form = h('form', {
+      class: 'artsearch', role: 'search',
+      onsubmit: e => {
+        e.preventDefault();
+        input.blur();
+        st.q = input.value.trim() || defQ();
+        input.value = st.q;
+        st.edited = st.q !== defQ();
+        st.caa.clear();
+        load();
+      },
+    }, h('label', { class: 'sr-only', for: 'art-q' }, 'Buscar capas'), input, h('button', { class: 'btn btn-primary', type: 'submit' }, 'Buscar'));
+    const srcSel = h('select', { class: 'inp', id: 'art-src' },
+      [['all', 'Todas'], ['caa', 'Cover Art Archive (MusicBrainz)'], ['discogs', 'Discogs'], ['itunes', 'iTunes']]
+        .map(([val, lab]) => h('option', { value: val, selected: st.source === val || null }, lab)));
+    srcSel.addEventListener('change', () => { st.source = srcSel.value; store.set('art_src', st.source); Sheet.rerender(); });
+    const typeSel = h('select', { class: 'inp', id: 'art-type' },
+      h('option', { value: 'front', selected: !st.every || null }, 'Só a frente'),
+      h('option', { value: 'every', selected: st.every || null }, 'Todas (verso, encarte, obi…)'));
+    typeSel.addEventListener('change', () => { st.every = typeSel.value === 'every'; store.set('art_every', st.every ? '1' : null); Sheet.rerender(); });
+
+    const curSrc = draft.art || draft.cover || draft.thumb;
+    const hasDg = !!(draft.cover || draft.thumb);
+    const cur = h('div', { class: 'curimg' },
+      coverEl(draft, 'large'),
+      h('div', { class: 'curimg-info' },
+        h('div', { class: 'lbl' }, 'Capa atual'),
+        h('p', { class: 'msg' }, draft.art ? artOrigin(draft.art) : hasDg ? 'Discogs (a do cadastro)' : 'Nenhuma ainda'),
+        h('div', { class: 'btnrow' },
+          curSrc ? h('button', { class: 'btn', type: 'button', onclick: () => downloadArt(draft.artFull || draft.art || draft.cover || draft.thumb, [draft.artist, draft.title].filter(Boolean).join(' - ')) }, icon('download', 18), 'Baixar') : null,
+          draft.art ? h('button', { class: 'btn btn-danger', type: 'button', onclick: () => { draft.art = ''; draft.artFull = ''; formV.dirty = true; Sheet.rerender(); } }, icon('trash', 18), hasDg ? 'Voltar à do Discogs' : 'Remover') : null)));
+
+    const mkSec = (title, ic) => {
+      const count = h('span', { class: 'sect-c' });
+      const status = h('div', { class: 'status-stack', role: 'status' });
+      const grid = h('div', { class: 'imggrid' });
+      return { el: h('section', { class: 'sect' }, h('h3', null, icon(ic, 18), title, count), status, grid), count, status, grid };
+    };
+    secs = {
+      mine: mkSec('Sua edição no Discogs', 'disc'),
+      caa: mkSec('Cover Art Archive (MusicBrainz)', 'layers'),
+      dgs: mkSec('Discogs: outras edições', 'search'),
+      it: mkSec('iTunes', 'image'),
+    };
+
+    body.append(
+      h('p', { class: 'hint' }, h('strong', null, draft.title || 'Sem título'), draft.artist ? ` · ${draft.artist}` : ''),
+      cur,
+      form,
+      h('div', { class: 'imgtools' },
+        h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'art-src' }, 'Fonte'), selwrap(srcSel)),
+        h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'art-type' }, 'Tipo'), selwrap(typeSel))),
+      secs.mine.el, secs.caa.el, secs.dgs.el, secs.it.el,
+      ownImageSection({
+        text: 'Use o scan da sua própria capa ou qualquer imagem. Ela fica guardada no aparelho e vai junto no backup.',
+        maxW: 1000, maxH: 1000,
+        onPick: (art, full) => choose(art, full),
+      }),
+      h('p', { class: 'credit' }, 'Capas do ', h('a', { href: 'https://coverartarchive.org', target: '_blank', rel: 'noopener' }, 'Cover Art Archive'),
+        ' (', h('a', { href: 'https://musicbrainz.org', target: '_blank', rel: 'noopener' }, 'MusicBrainz'), '), do Discogs e do iTunes.'));
+    Object.keys(secs).forEach(paintSec);
+    load();
+  };
+
+  function choose(art, full) {
+    draft.art = art;
+    draft.artFull = full || '';
+    formV.dirty = true;
+    Sheet.back();
+  }
+
+  function run(slot, key, fn, name) {
+    if (slot.key === key) return;
+    slot.key = key; slot.loading = true; slot.err = null; slot.data = null;
+    paintSec(name);
+    fn().then(d => { if (slot.key === key) slot.data = d; }, e => { if (slot.key === key) slot.err = e; })
+      .finally(() => { if (slot.key === key) { slot.loading = false; paintSec(name); load(); } });
+  }
+
+  function mbQuery() {
+    const { barcode, catno } = edInfo();
+    const parts = [];
+    if (st.edited) {
+      const t = looseQuery(st.q);
+      if (t) parts.push(`(${t})`);
+    } else {
+      const base = [draft.title && `release:"${lucene(draft.title)}"`, draft.artist && `artist:"${lucene(draft.artist)}"`].filter(Boolean).join(' AND ');
+      if (base) parts.push(`(${base})`);
+      const cn = catno || draft.catno;
+      if (cn) parts.push(`catno:"${lucene(cn)}"`);
+    }
+    if (barcode) parts.push(`barcode:${barcode}`);
+    return parts.join(' OR ');
+  }
+  function isSame(r) {
+    const { barcode } = edInfo();
+    const cn = edInfo().catno || draft.catno;
+    return !!((barcode && r.barcode === barcode) || (cn && r.catno && flat(r.catno) === flat(cn)));
+  }
+  const mbSorted = () => (st.mb.data || []).slice().sort((a, b) => isSame(b) - isSame(a) || b.score - a.score);
+
+  function load() {
+    const rid = draft.discogs.releaseId;
+    const needMine = !!(rid && DG.token);
+    if (needMine) run(st.mine, 'r' + rid, () => dgReleaseArt(rid), 'mine');
+    // o MusicBrainz espera a ficha do Discogs para usar o código de barras
+    if (want('caa') && !(needMine && st.mine.loading)) {
+      const q = mbQuery();
+      if (q) run(st.mb, q, () => MB.search(q), 'caa');
+    }
+    if (want('caa') && st.every && st.mb.data && !st.mb.loading) {
+      for (const r of mbSorted().slice(0, 10)) {
+        if (st.caa.has(r.id)) continue;
+        const slot = {};
+        st.caa.set(r.id, slot);
+        run(slot, r.id, () => MB.images(r.id), 'caa');
+      }
+    }
+    if (want('discogs') && DG.token) {
+      const params = st.edited ? { q: st.q, type: 'release' } : draft.title ? { release_title: draft.title, artist: draft.artist, type: 'release' } : null;
+      if (params) {
+        run(st.dgs, JSON.stringify(params), () => DG.search({ ...params, per_page: 24 })
+          .then(d => (d.results || []).filter(r => r.type === 'release').map(normResult)), 'dgs');
+      }
+    }
+    if (want('itunes') && st.q.trim()) {
+      const cc = IT_STORES[draft.country] || 'us';
+      run(st.it, st.q.trim() + '|' + cc, () => IT.search(st.q.trim(), cc), 'it');
+    }
+  }
+
+  function card(x) {
+    const cur = !!draft.art && draft.art === x.art;
+    const cv = h('span', { class: 'cover' });
+    const img = h('img', { src: x.thumb, alt: '', loading: x.eager ? null : 'lazy', decoding: 'async', referrerpolicy: 'no-referrer' });
+    cv.append(img);
+    if (x.tag) cv.append(h('span', { class: 'ltag tl' }, x.tag.toUpperCase()));
+    if (x.same) cv.append(h('span', { class: 'ltag same' }, 'SUA EDIÇÃO'));
+    if (cur) cv.append(h('span', { class: 'curmark' }, icon('check', 14)));
+    const r = x.rel || {};
+    const name = [differs(r.title, draft.title) ? r.title : '', differs(r.artist, draft.artist) ? r.artist : ''].filter(Boolean).join(' — ');
+    const meta1 = [r.country, r.year, r.format].filter(Boolean).join(' · ');
+    const meta2 = [r.label, r.catno].filter(Boolean).join(' ');
+    const btn = h('button', {
+      class: 'imgcard' + (cur ? ' current' : ''), type: 'button', 'aria-pressed': String(cur),
+      'aria-label': [x.src, x.tag, r.title, meta1, meta2].filter(Boolean).join(', '),
+      onclick: () => choose(x.art, x.full),
+    },
+    cv,
+    h('span', { class: 'imgcard-info' },
+      h('span', { class: 'imgcard-src' }, x.src),
+      name ? h('span', { class: 'imgcard-t' }, name) : null,
+      meta1 ? h('span', { class: 'imgcard-m' }, meta1) : null,
+      meta2 ? h('span', { class: 'imgcard-m' }, meta2) : null,
+      x.w && x.h ? h('span', { class: 'imgcard-m' }, `${x.w} × ${x.h}`) : x.hires ? h('span', { class: 'imgcard-m' }, x.hires) : null));
+    img.addEventListener('error', () => { if (x.onFail) x.onFail(btn); else img.replaceWith(h('span', { class: 'ph' }, icon('image'))); }, { once: true });
+    if (x.onLoad) img.addEventListener('load', x.onLoad, { once: true });
+    return btn;
+  }
+
+  function paintSec(name) {
+    const sec = secs[name];
+    if (!sec) return;
+    const visible = name === 'mine' ? want('discogs') && !!draft.discogs.releaseId
+      : name === 'dgs' ? want('discogs') : name === 'caa' ? want('caa') : want('itunes');
+    sec.el.hidden = !visible;
+    if (!visible) return;
+    const line = (...c) => h('div', { class: 'status-line' }, ...c);
+    const spin = t => line(...spinnerLine(t));
+    const errLine = (e, n) => { const l = line(apiErrText(e, n)); l.classList.add('error'); return l; };
+    const toSettings = h('button', { class: 'linkbtn', type: 'button', onclick: () => Sheet.push(settingsView()) }, 'Ajustes');
+    const lines = [];
+    let cards = [];
+    let countLater = false;
+
+    if (name === 'mine') {
+      if (!DG.token) lines.push(line('Salve o token do Discogs em', toSettings, 'para ver todas as imagens da sua edição.'));
+      else if (st.mine.loading) lines.push(spin('Abrindo a sua edição no Discogs…'));
+      else if (st.mine.err) lines.push(errLine(st.mine.err, 'Discogs'));
+      else if (st.mine.data) {
+        const all = st.mine.data.images;
+        const front = all.find(x => x.type === 'primary') || all[0];
+        cards = (st.every ? all : front ? [front] : []).map((x, i) => card({
+          src: 'Discogs', thumb: x.thumb, art: x.art, full: x.full, w: x.w, h: x.h,
+          tag: x === front ? 'Frente' : `Imagem ${all.indexOf(x) + 1}`, same: true,
+        }));
+        if (!all.length) lines.push(line('A sua edição não tem imagens no Discogs.'));
+      }
+    }
+
+    if (name === 'caa') {
+      if (st.mb.loading || (draft.discogs.releaseId && DG.token && st.mine.loading && !st.mb.key)) lines.push(spin('Procurando a edição no MusicBrainz…'));
+      else if (st.mb.err) lines.push(errLine(st.mb.err, 'MusicBrainz'));
+      else if (st.mb.data) {
+        const rels = mbSorted();
+        if (!rels.length) {
+          lines.push(line('Nenhuma edição encontrada no MusicBrainz. Tente mudar a busca acima.'));
+        } else if (!st.every) {
+          // só a frente: pede a capa de cada edição direto ao Cover Art Archive; as que não têm somem
+          let left = rels.length;
+          countLater = true;
+          const settle = () => {
+            if (--left > 0) return;
+            const n = sec.grid.children.length;
+            sec.count.textContent = n ? fmtN(n) : '';
+            if (!n) sec.status.append(line('Nenhuma dessas edições tem capa no Cover Art Archive.'));
+          };
+          cards = rels.map(r => card({
+            src: 'Cover Art Archive', rel: r, tag: 'Frente', same: isSame(r), eager: true,
+            thumb: `https://coverartarchive.org/release/${r.id}/front-250`,
+            art: `https://coverartarchive.org/release/${r.id}/front-500`,
+            full: `https://coverartarchive.org/release/${r.id}/front`,
+            onFail: el => { el.remove(); settle(); }, onLoad: settle,
+          }));
+        } else {
+          const top = rels.slice(0, 10);
+          let pending = 0;
+          for (const r of top) {
+            const slot = st.caa.get(r.id);
+            if (!slot || slot.loading) { pending++; continue; }
+            for (const x of slot.data || []) {
+              cards.push(card({ src: 'Cover Art Archive', rel: r, same: isSame(r), thumb: x.thumb, art: x.art, full: x.full,
+                tag: x.types.map(t => CAA_TYPES[t] || t).join(' + ') || 'Outra' }));
+            }
+          }
+          if (pending) lines.push(spin('Carregando as imagens das edições…'));
+          else if (!cards.length) lines.push(line('Nenhuma dessas edições tem imagens no Cover Art Archive.'));
+          if (rels.length > top.length) lines.push(line(`Imagens das ${top.length} edições mais parecidas (de ${rels.length} encontradas).`));
+        }
+      }
+    }
+
+    if (name === 'dgs') {
+      if (!DG.token) lines.push(line('Salve o token do Discogs em', toSettings, 'para ver capas de outras edições.'));
+      else if (st.dgs.loading) lines.push(spin('Buscando outras edições no Discogs…'));
+      else if (st.dgs.err) lines.push(errLine(st.dgs.err, 'Discogs'));
+      else if (st.dgs.data) {
+        cards = st.dgs.data.filter(r => r.cover && r.id !== draft.discogs.releaseId).map(r => card({
+          src: 'Discogs', thumb: r.thumb || r.cover, art: r.cover, full: r.cover,
+          rel: { title: r.title, artist: r.artist, year: r.year, country: r.country, format: r.formatText, label: r.label, catno: r.catno },
+        }));
+        if (!cards.length) lines.push(line('Nenhuma outra edição com capa no Discogs.'));
+      }
+    }
+
+    if (name === 'it') {
+      if (st.it.loading) lines.push(spin('Buscando no iTunes…'));
+      else if (st.it.err) lines.push(errLine(st.it.err, 'iTunes'));
+      else if (st.it.data) {
+        cards = st.it.data.map(r => card({ src: 'iTunes', thumb: r.thumb, art: r.art, full: r.full, rel: { title: r.title, artist: r.artist, year: r.year }, hires: 'baixa em até 3000 px' }));
+        if (!cards.length) lines.push(line('Nada no iTunes com essa busca.'));
+      }
+    }
+
+    sec.status.replaceChildren(...lines);
+    sec.grid.replaceChildren(...cards);
+    sec.count.textContent = countLater ? '' : cards.length ? fmtN(cards.length) : '';
   }
 
   return v;
@@ -2173,6 +2591,9 @@ function artOrigin(u) {
     const host = new URL(u).hostname;
     if (/tmdb\.org$/.test(host)) return 'TheMovieDb';
     if (/media-amazon\.com$/.test(host)) return 'The Open Movie Database';
+    if (/(coverartarchive|archive)\.org$/.test(host)) return 'Cover Art Archive (MusicBrainz)';
+    if (/discogs\.com$/.test(host)) return 'Discogs';
+    if (/mzstatic\.com$/.test(host)) return 'iTunes';
     return 'Link: ' + host;
   } catch (e) { return 'Link'; }
 }
@@ -2873,6 +3294,42 @@ function trackView(draft, kind, idx, formV) {
   return v;
 }
 
+/* Imagem própria (arquivo do aparelho, reduzido e guardado como JPEG, ou link direto), usada nas duas abas. */
+function ownImageSection({ text, maxW, maxH, onPick }) {
+  const fileIn = h('input', { type: 'file', accept: 'image/*', hidden: true, id: 'img-file' });
+  const upMsg = h('p', { class: 'msg', role: 'status' });
+  const upBtn = h('button', { class: 'btn', type: 'button', onclick: () => fileIn.click() }, icon('upload', 18), 'Enviar do aparelho');
+  fileIn.addEventListener('change', async () => {
+    const f = fileIn.files && fileIn.files[0];
+    fileIn.value = '';
+    if (!f) return;
+    upBtn.disabled = true;
+    upMsg.replaceChildren(...spinnerLine('Preparando a imagem…'));
+    try {
+      onPick(await fileToArt(f, maxW, maxH), '');
+    } catch (e) {
+      upBtn.disabled = false;
+      upMsg.textContent = 'Não consegui abrir essa imagem. Tente um JPG ou PNG.';
+    }
+  });
+  const urlIn = h('input', { class: 'inp', id: 'img-url', type: 'url', inputmode: 'url', placeholder: 'https://…', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
+  const urlMsg = h('p', { class: 'msg', role: 'status' });
+  const urlBtn = h('button', { class: 'btn', type: 'submit' }, 'Usar');
+  const urlForm = h('form', {
+    class: 'stack',
+    onsubmit: async e => {
+      e.preventDefault();
+      const u = urlIn.value.trim();
+      if (!/^https:\/\/[^\s"'<>]+$/i.test(u)) { urlMsg.textContent = 'Cole um link que comece com https://'; return; }
+      urlBtn.disabled = true;
+      urlMsg.replaceChildren(...spinnerLine('Abrindo a imagem…'));
+      if (await testImage(u)) onPick(u, u);
+      else { urlBtn.disabled = false; urlMsg.textContent = 'Não consegui abrir uma imagem nesse link. Use o link direto do arquivo (termina em .jpg, .png…).'; }
+    },
+  }, h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'img-url' }, 'Link de uma imagem'), h('div', { class: 'inline-form' }, urlIn, urlBtn)), urlMsg);
+  return section('Imagem própria', 'image', h('p', null, text), h('div', { class: 'btnrow' }, upBtn), fileIn, upMsg, urlForm);
+}
+
 /* ---------- Tela: escolher capa ou fundo (fonte, tipo, idiomas, como no Jellyfin) ---------- */
 function imagesView(draft, formV, type0) {
   const st = {
@@ -2913,40 +3370,6 @@ function imagesView(draft, formV, type0) {
         h('p', { class: 'msg' }, artOrigin(cur)),
         h('button', { class: 'btn btn-danger', type: 'button', onclick: () => { draft[st.type] = ''; formV.dirty = true; Sheet.rerender(); } }, icon('trash', 18), 'Remover'))) : null;
 
-    // imagem própria: arquivo do aparelho
-    const fileIn = h('input', { type: 'file', accept: 'image/*', hidden: true, id: 'img-file' });
-    const upMsg = h('p', { class: 'msg', role: 'status' });
-    const upBtn = h('button', { class: 'btn', type: 'button', onclick: () => fileIn.click() }, icon('upload', 18), 'Enviar do aparelho');
-    fileIn.addEventListener('change', async () => {
-      const f = fileIn.files && fileIn.files[0];
-      fileIn.value = '';
-      if (!f) return;
-      upBtn.disabled = true;
-      upMsg.replaceChildren(...spinnerLine('Preparando a imagem…'));
-      try {
-        choose(poster() ? await fileToArt(f, 600, 900) : await fileToArt(f, 1280, 720));
-      } catch (e) {
-        upBtn.disabled = false;
-        upMsg.textContent = 'Não consegui abrir essa imagem. Tente um JPG ou PNG.';
-      }
-    });
-    // imagem própria: link
-    const urlIn = h('input', { class: 'inp', id: 'img-url', type: 'url', inputmode: 'url', placeholder: 'https://…', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
-    const urlMsg = h('p', { class: 'msg', role: 'status' });
-    const urlBtn = h('button', { class: 'btn', type: 'submit' }, 'Usar');
-    const urlForm = h('form', {
-      class: 'stack',
-      onsubmit: async e => {
-        e.preventDefault();
-        const u = urlIn.value.trim();
-        if (!/^https:\/\/[^\s"'<>]+$/i.test(u)) { urlMsg.textContent = 'Cole um link que comece com https://'; return; }
-        urlBtn.disabled = true;
-        urlMsg.replaceChildren(...spinnerLine('Abrindo a imagem…'));
-        if (await testImage(u)) choose(u);
-        else { urlBtn.disabled = false; urlMsg.textContent = 'Não consegui abrir uma imagem nesse link. Use o link direto do arquivo (termina em .jpg, .png…).'; }
-      },
-    }, h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'img-url' }, 'Link de uma imagem'), h('div', { class: 'inline-form' }, urlIn, urlBtn)), urlMsg);
-
     body.append(
       h('p', { class: 'hint' }, h('strong', null, draft.title || 'Sem título'), draft.year ? ` (${draft.year})` : ''),
       curBlock,
@@ -2955,11 +3378,13 @@ function imagesView(draft, formV, type0) {
         h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'img-type' }, 'Tipo'), selwrap(typeSel)),
         langBox, countEl),
       statusEl, gridEl,
-      section('Imagem própria', 'image',
-        h('p', null, poster()
+      ownImageSection({
+        text: poster()
           ? 'Use o scan da sua capa, uma arte que você fez ou qualquer imagem. Ela fica guardada no aparelho e vai junto no backup.'
-          : 'Uma cena do filme, de preferência larga (16:9). Fica guardada no aparelho e vai junto no backup.'),
-        h('div', { class: 'btnrow' }, upBtn), fileIn, upMsg, urlForm),
+          : 'Uma cena do filme, de preferência larga (16:9). Fica guardada no aparelho e vai junto no backup.',
+        maxW: poster() ? 600 : 1280, maxH: poster() ? 900 : 720,
+        onPick: url => choose(url),
+      }),
       tmdbCredit());
     paint();
     load();
@@ -3287,6 +3712,7 @@ function exportCSV() {
     ['Status', it => statusLabel(it.status)], ['Data da digitalização', it => fmtDate(it.date)],
     ['Formato do arquivo', it => it.fileFormat], ['Equipamento', it => it.equipment], ['Estado da mídia', it => it.grade],
     ['Onde está o arquivo', it => it.location], ['Notas', it => it.notes], ['Link do Discogs', it => it.discogs.url],
+    ['Capa escolhida', it => it.artFull || (it.art && !it.art.startsWith('data:') ? it.art : it.art ? 'enviada do aparelho' : '')],
     ['Release ID', it => it.discogs.releaseId || ''], ['Master ID', it => it.discogs.masterId || ''],
     ['Criado em', it => it.createdAt], ['Atualizado em', it => it.updatedAt],
   ];

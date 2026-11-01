@@ -37,6 +37,7 @@ O token fica salvo só no aparelho e é enviado apenas ao Discogs. Sem token, co
 - **Status**: na fila, em andamento, concluído ou refazer. Ao marcar *Concluído*, a data de hoje é preenchida (dá para mudar).
 - **Ficha técnica**: formato do arquivo, equipamento, estado da mídia (escala Goldmine, a mesma do Discogs), onde está o arquivo e notas. Os campos sugerem o que você já usou antes.
 - **Mesmo álbum em outra mídia**: abra o item e use *Duplicar para outra mídia*.
+- **Capa**: toque na capa do item (ou em *Trocar capa*). Como no EAC, o app procura a edição no **MusicBrainz** e mostra as capas do **Cover Art Archive**; a edição com o mesmo código de barras ou nº de catálogo do seu Discogs vem primeiro, marcada *Sua edição*. Também aparecem todas as imagens da sua edição no **Discogs**, capas de outras edições e a do **iTunes** (que baixa em até 3000 px). Em *Tipo → Todas* aparecem verso, encarte, obi etc. Dá para enviar o scan da sua própria capa ou colar um link. **Baixar** salva a capa escolhida no tamanho original (para usar como `folder.jpg` no rip). *Voltar à do Discogs* desfaz a troca.
 
 ## Aba Remuxes
 
@@ -70,4 +71,4 @@ Substitua os arquivos no repositório pelos da nova versão. O app se atualiza s
 
 ## Créditos
 
-Dados de discos fornecidos pelo [Discogs](https://www.discogs.com). Dados e imagens de filmes do [TMDb](https://www.themoviedb.org); este app usa a API do TMDb, mas não é endossado nem certificado por ele. Capas extras do [OMDb](https://www.omdbapi.com). Fontes Archivo e Courier Prime sob a SIL Open Font License (licenças na pasta `fonts`).
+Dados de discos fornecidos pelo [Discogs](https://www.discogs.com). Capas de discos do [Cover Art Archive](https://coverartarchive.org) / [MusicBrainz](https://musicbrainz.org), do Discogs e do iTunes. Dados e imagens de filmes do [TMDb](https://www.themoviedb.org); este app usa a API do TMDb, mas não é endossado nem certificado por ele. Capas extras do [OMDb](https://www.omdbapi.com). Fontes Archivo e Courier Prime sob a SIL Open Font License (licenças na pasta `fonts`).
