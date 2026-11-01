@@ -220,7 +220,10 @@ input[type="date"].inp { min-width: 0; }
 .chip[aria-pressed="true"] .c { color: inherit; opacity: .75; }
 .tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .sort { display: inline-flex; align-items: center; gap: 8px; font-size: .86rem; color: var(--ink-2); min-width: 0; }
-.sort .inp { min-height: 36px; padding-block: 6px; width: auto; }
+.sort { flex: 1 1 auto; }
+.sort .selwrap { flex: 1 1 auto; min-width: 0; max-width: 320px; }
+.sort .inp { min-height: 36px; padding-block: 6px; width: 100%; text-overflow: ellipsis; }
+@media (max-width: 480px) { .sort-txt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
 .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; background: var(--surface); flex: none; }
 .seg button { width: 42px; height: 34px; border: 0; background: transparent; color: var(--ink-3); display: grid; place-items: center; }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--ground); }
@@ -259,6 +262,17 @@ input[type="date"].inp { min-width: 0; }
 .card:hover .card-title { color: var(--accent); }
 .card-title { font-size: .86rem; font-weight: 650; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .card-artist { font-size: .8rem; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; min-width: 0; }
+.card-foot .card-artist { flex: 1 1 auto; min-width: 0; }
+.card-date {
+  flex: none; padding: 1px 8px; border: 1px solid var(--rule); border-radius: 999px;
+  font-family: var(--font-mono); font-size: .74rem; color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.card-date.missing, .date.missing { color: var(--st-refazer); border-style: dashed; }
+.date.missing { border: 1px dashed currentColor; border-radius: 999px; padding: 0 7px; }
+.date-wrap { position: relative; flex: 1 1 auto; min-width: 0; display: block; }
+.date-wrap .inp { width: 100%; font-variant-numeric: tabular-nums; }
+.date-native { position: absolute; left: 0; bottom: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; border: 0; padding: 0; margin: 0; }
 .cover .over { position: absolute; left: 5px; bottom: 5px; font-size: .68rem; padding: 0 5px; }
 .sdot { position: absolute; top: 6px; right: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--sc); box-shadow: 0 0 0 2px var(--surface); }
 
@@ -612,7 +626,7 @@ details.albumdata[open] > summary svg { transform: none; }
     </label>
     <div class="chiprow" id="medium-chips" role="group" aria-label="Filtrar por mídia"></div>
     <div class="tools">
-      <label class="sort" for="sort">Ordenar
+      <label class="sort" for="sort"><span class="sort-txt">Ordenar</span>
         <span class="selwrap">
           <select class="inp" id="sort">
             <option value="recent">Atualizados</option>
@@ -676,7 +690,7 @@ details.albumdata[open] > summary svg { transform: none; }
 'use strict';
 
 /* ================= Constantes ================= */
-const VERSION = '1.3';
+const VERSION = '1.4';
 
 const MEDIA = [
   { id: 'vinil', label: 'Vinil', dg: 'Vinyl', icon: 'vinyl',
@@ -768,6 +782,7 @@ const ICONS = {
   down: '<path d="M6 10l6 6 6-6"/>',
   pencil: '<path d="M15.5 5.5l3 3L9 18H6v-3z"/>',
   clip: '<rect x="6" y="5" width="12" height="15" rx="2"/><path d="M9.5 5V3.8h5V5M9 10h6M9 13.5h6M9 17h3.5"/>',
+  calendar: '<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
 };
 
 /* ================= Utilidades ================= */
@@ -1165,16 +1180,33 @@ function history(key, medium) {
   }
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
 }
+/* Ordenação por data: o que não tem data vai sempre para o fim, nos dois sentidos. */
+const byUpdated = (a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '');
+function byDate(get, dir) {
+  return (a, b) => {
+    const x = get(a), y = get(b);
+    if (!x !== !y) return x ? -1 : 1;
+    return dir === 'asc' ? x.localeCompare(y) : y.localeCompare(x);
+  };
+}
+// lançamento: a data completa quando existe (filmes, via TMDb); senão só o ano
+const releaseKey = it => it.releaseDate || (it.year ? `${it.year}-00-00` : '');
+const digiKey = it => it.date || '';
+// nomes antigos guardados no aparelho → novos
+const SORT_ALIASES = { year: 'release_asc', date: 'date_desc' };
+
 function sortItems(arr) {
   const art = it => String(it.artist || '').replace(/^the\s+/i, '');
-  const byUpdated = (a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '');
+  const tie = (a, b) => collator.compare(art(a), art(b)) || collator.compare(a.title, b.title);
   const cmp = {
     recent: byUpdated,
     added: (a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''),
-    artist: (a, b) => collator.compare(art(a), art(b)) || collator.compare(a.title, b.title) || (a.year || 0) - (b.year || 0),
+    artist: (a, b) => collator.compare(art(a), art(b)) || (a.year || 0) - (b.year || 0) || collator.compare(a.title, b.title),
     title: (a, b) => collator.compare(a.title, b.title) || collator.compare(art(a), art(b)),
-    year: (a, b) => (a.year || 1e4) - (b.year || 1e4) || collator.compare(art(a), art(b)),
-    date: (a, b) => (b.date || '').localeCompare(a.date || '') || byUpdated(a, b),
+    release_asc: (a, b) => byDate(releaseKey, 'asc')(a, b) || tie(a, b),
+    release_desc: (a, b) => byDate(releaseKey, 'desc')(a, b) || tie(a, b),
+    date_desc: (a, b) => byDate(digiKey, 'desc')(a, b) || byUpdated(a, b),
+    date_asc: (a, b) => byDate(digiKey, 'asc')(a, b) || byUpdated(a, b),
   }[S.sort] || byUpdated;
   return arr.sort(cmp);
 }
@@ -1209,16 +1241,16 @@ function itemRow(it) {
     h('span', { class: 'row-main' },
       h('span', { class: 'row-title' }, it.title || 'Sem título'),
       h('span', { class: 'row-sub' }, it.artist || 'Artista não informado', meta ? h('span', { class: 'mono' }, ' · ' + meta) : null),
-      h('span', { class: 'row-tags' }, mtag(it.medium), pill(it.status), it.date ? h('span', { class: 'date' }, fmtDate(it.date)) : null)));
+      h('span', { class: 'row-tags' }, mtag(it.medium), pill(it.status), dateTag(it, 'date'))));
 }
 function itemCard(it) {
   const cv = coverEl(it, 'large');
   cv.append(h('span', { class: 'sdot st-' + it.status }), h('span', { class: 'mtag over' }, (MEDIUM[it.medium] || MEDIUM.outro).label));
-  const label = [it.title || 'Sem título', it.artist, (MEDIUM[it.medium] || MEDIUM.outro).label, statusLabel(it.status)].filter(Boolean).join(', ');
+  const label = [it.title || 'Sem título', it.artist, (MEDIUM[it.medium] || MEDIUM.outro).label, statusLabel(it.status), it.date && 'digitalizado em ' + fmtDate(it.date)].filter(Boolean).join(', ');
   return h('button', { class: 'card', type: 'button', 'aria-label': label, onclick: () => openEdit(it.id) },
     cv,
     h('span', { class: 'card-title' }, it.title || 'Sem título'),
-    h('span', { class: 'card-artist' }, it.artist || '—'));
+    h('span', { class: 'card-foot' }, h('span', { class: 'card-artist' }, it.artist || '—'), dateTag(it, 'card-date')));
 }
 
 function render() {
@@ -1424,6 +1456,104 @@ function chipsRow(options, current, onPick, ariaLabel) {
 }
 function spinnerLine(text) { return [h('span', { class: 'spinner', 'aria-hidden': 'true' }), text]; }
 
+/* ---------- Datas em dd/mm/aaaa ----------
+   O campo de data nativo segue o idioma do navegador (no Firefox ou Chrome em inglês vira mm/dd/aaaa).
+   Aqui a data é digitada e mostrada como dia/mês/ano; o calendário nativo continua disponível pelo botão,
+   e o valor guardado segue em ISO (aaaa-mm-dd), como antes. */
+function parseBR(s) {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(s || '').trim());
+  if (!m) return '';
+  const d = +m[1], mo = +m[2], y = +m[3];
+  if (y < 1850 || y > 2200 || mo < 1 || mo > 12 || d < 1) return '';
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  if (dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return '';
+  return `${y}-${pad(mo)}-${pad(d)}`;
+}
+function maskBR(v) {
+  const d = String(v).replace(/\D/g, '').slice(0, 8);
+  return d.length > 4 ? `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}` : d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
+}
+const BAD_DATE = 'Data inválida. Use dia/mês/ano, por exemplo 26/10/2026.';
+function dateField(obj, key, { id, label, today = true, onUserChange }) {
+  const text = h('input', { class: 'inp', id, type: 'text', inputmode: 'numeric', autocomplete: 'off', placeholder: 'dd/mm/aaaa', maxlength: '10', value: fmtDate(obj[key]) });
+  const native = h('input', { type: 'date', class: 'date-native', tabindex: '-1', 'aria-hidden': 'true', value: obj[key] || '' });
+  const err = h('p', { class: 'err', hidden: true });
+  const api = {};
+  const emit = () => { err.hidden = true; onUserChange && onUserChange(obj[key]); };
+  api.set = iso => { obj[key] = iso || ''; text.value = fmtDate(iso); native.value = iso || ''; err.hidden = true; };
+  api.error = msg => { err.textContent = msg; err.hidden = false; };
+  api.valid = () => !text.value.trim() || !!parseBR(text.value);
+  api.focus = () => { text.focus({ preventScroll: true }); text.scrollIntoView({ block: 'center', behavior: 'smooth' }); };
+  api.sync = () => { if (document.activeElement !== text) { text.value = fmtDate(obj[key]); native.value = obj[key] || ''; } };
+  text.addEventListener('input', () => {
+    const masked = maskBR(text.value);
+    if (masked !== text.value) text.value = masked;
+    obj[key] = parseBR(masked);
+    native.value = obj[key];
+    emit();
+  });
+  text.addEventListener('blur', () => {
+    // ano com 2 dígitos: 26/10/26 vira 26/10/2026 (e 26/10/88 vira 1988)
+    const m = /^(\d{2})\/(\d{2})\/(\d{2})$/.exec(text.value);
+    if (m) {
+      const yy = +m[3];
+      text.value = `${m[1]}/${m[2]}/${(yy <= new Date().getFullYear() % 100 ? 2000 : 1900) + yy}`;
+      obj[key] = parseBR(text.value);
+      native.value = obj[key];
+      emit();
+    }
+    if (text.value && !parseBR(text.value)) api.error(BAD_DATE);
+  });
+  native.addEventListener('change', () => { api.set(native.value); emit(); });
+  const cal = h('button', {
+    class: 'icon-btn bordered', type: 'button', 'aria-label': 'Abrir calendário', title: 'Calendário',
+    onclick: () => {
+      native.value = obj[key] || '';
+      try { native.showPicker(); } catch (e) { native.focus(); try { native.click(); } catch (_) { /* sem calendário */ } }
+    },
+  }, icon('calendar'));
+  api.el = h('div', { class: 'field' },
+    h('label', { class: 'lbl', for: id }, label),
+    h('div', { class: 'inline-form' },
+      h('span', { class: 'date-wrap' }, text, native),
+      cal,
+      today ? h('button', { class: 'btn', type: 'button', onclick: () => { api.set(todayISO()); emit(); } }, 'Hoje') : null),
+    err);
+  return api;
+}
+
+/* Concluído precisa da data em que foi digitalizado. */
+const needsDate = it => it.status === 'concluido';
+function dateTag(it, cls) {
+  if (it.date) return h('span', { class: cls, title: 'Data de digitalização' }, fmtDate(it.date));
+  if (needsDate(it)) return h('span', { class: cls + ' missing', title: 'Concluído sem data de digitalização' }, 'sem data');
+  return null;
+}
+
+/* Status + data de digitalização, iguais nas duas abas. Num cadastro novo a data já vem com hoje;
+   se o status mudar para "na fila" ou "em andamento" antes de você mexer na data, ela é limpa. */
+function statusDateBlock(draft, { prefix, isNew, touch }) {
+  let auto = isNew && !!draft.date;
+  const df = dateField(draft, 'date', { id: prefix + '-date', label: 'Data de digitalização', onUserChange: () => { auto = false; touch(); } });
+  const field = h('div', { class: 'field', role: 'radiogroup', 'aria-labelledby': `lbl-${prefix}status` },
+    h('div', { class: 'lbl', id: `lbl-${prefix}status` }, 'Status'),
+    h('div', { class: 'choices' }, STATUS.map(s => choice(prefix + 'status', s.id, s.label, draft.status === s.id, val => {
+      draft.status = val;
+      touch();
+      if (val === 'concluido' && !draft.date) { df.set(todayISO()); auto = true; }
+      else if ((val === 'fila' || val === 'andamento') && auto) df.set('');
+    }, 'status st-' + s.id))));
+  return {
+    status: field,
+    date: df,
+    validate() {
+      if (!df.valid()) { df.error(BAD_DATE); df.focus(); return false; }
+      if (needsDate(draft) && !draft.date) { df.error('Informe quando você digitalizou (ou toque em Hoje).'); df.focus(); return false; }
+      return true;
+    },
+  };
+}
+
 const splitList = s => String(s || '').split(/\s*[,;]\s*/).map(x => x.trim()).filter(Boolean);
 
 /* append: a sugestão é somada à lista (ex.: "EternalDub, ffmpeg") em vez de substituir o texto. */
@@ -1458,7 +1588,7 @@ function blankDraft() {
     id: null, createdAt: null,
     discogs: { type: null, releaseId: null, masterId: null, url: '' },
     title: '', artist: '', year: null, country: '', label: '', catno: '', formatText: '', thumb: '', cover: '', art: '', artFull: '',
-    medium: '', mediumDetail: '', status: 'concluido', date: '', fileFormat: '', equipment: '', grade: '', location: '', notes: '',
+    medium: '', mediumDetail: '', status: 'concluido', date: todayISO(), fileFormat: '', equipment: '', grade: '', location: '', notes: '',
   };
 }
 
@@ -1788,19 +1918,8 @@ function formView(draft, mode) {
       sugs: () => uniq([...((MEDIUM[draft.medium] || {}).details || []), ...history('mediumDetail', draft.medium)]),
     });
 
-    // status e data
-    const dateInp = h('input', { class: 'inp', type: 'date', id: 'f-date', value: draft.date || '' });
-    dateInp.addEventListener('input', () => { draft.date = dateInp.value; touch(); });
-    const stField = h('div', { class: 'field', role: 'radiogroup', 'aria-labelledby': 'lbl-status' },
-      h('div', { class: 'lbl', id: 'lbl-status' }, 'Status'),
-      h('div', { class: 'choices' }, STATUS.map(s => choice('status', s.id, s.label, draft.status === s.id, val => {
-        draft.status = val; touch();
-        if (val === 'concluido' && !draft.date) { draft.date = todayISO(); dateInp.value = draft.date; }
-      }, 'status st-' + s.id))));
-    const dateField = h('div', { class: 'field' },
-      h('label', { class: 'lbl', for: 'f-date' }, 'Data da digitalização'),
-      h('div', { class: 'inline-form' }, dateInp,
-        h('button', { class: 'btn', type: 'button', onclick: () => { draft.date = todayISO(); dateInp.value = draft.date; touch(); } }, 'Hoje')));
+    // status e data de digitalização
+    const sd = statusDateBlock(draft, { prefix: 'f', isNew: mode === 'new', touch });
 
     parts.fmt = sugField(draft, {
       id: 'f-format', label: 'Formato do arquivo', key: 'fileFormat', onInput: touch,
@@ -1825,7 +1944,7 @@ function formView(draft, mode) {
 
     if (parts.album.manual) body.append(parts.card, parts.album.el);
     else body.append(parts.card, parts.owned, parts.edition);
-    body.append(medField, parts.detail.el, stField, dateField, parts.fmt.el, parts.equip.el, gradeField, loc.el, notesField);
+    body.append(medField, parts.detail.el, sd.status, sd.date.el, parts.fmt.el, parts.equip.el, gradeField, loc.el, notesField);
     if (!parts.album.manual) body.append(parts.album.el);
     if (mode === 'edit') {
       body.append(h('div', { class: 'danger' },
@@ -1853,7 +1972,7 @@ function formView(draft, mode) {
     function validate() {
       if (!String(draft.title || '').trim()) { parts.album.showTitleError(); return false; }
       if (!draft.medium) { medErr.hidden = false; medField.scrollIntoView({ block: 'center', behavior: 'smooth' }); return false; }
-      return true;
+      return sd.validate();
     }
   };
   return v;
@@ -1879,6 +1998,7 @@ async function duplicate(draft, validate) {
   for (const k of ['title', 'artist', 'year', 'country', 'label', 'catno', 'formatText', 'thumb', 'cover', 'art', 'artFull']) d[k] = draft[k];
   d.discogs = { ...draft.discogs };
   d.status = 'fila';
+  d.date = '';
   Sheet.replace(formView(d, 'new'));
   toast('Original salvo. Agora escolha a outra mídia.');
 }
@@ -2485,6 +2605,7 @@ function normalizeRemux(r) {
     tmdb: { type: tid ? (t.type === 'tv' ? 'tv' : 'movie') : null, id: tid, imdbId: /^tt\d{5,12}$/.test(t.imdbId || '') ? t.imdbId : '' },
     title: s(r.title, 500).trim(),
     originalTitle: s(r.originalTitle, 500).trim(),
+    releaseDate: /^\d{4}-\d{2}-\d{2}$/.test(r.releaseDate || '') ? r.releaseDate : '',
     year: year && year < 2200 ? year : null,
     poster: safeArt(r.poster),
     backdrop: safeArt(r.backdrop),
@@ -2508,7 +2629,7 @@ function blankRemux() {
   return {
     id: null, createdAt: null, tmdb: { type: null, id: null, imdbId: '' },
     title: '', originalTitle: '', year: null, poster: '', backdrop: '',
-    status: 'concluido', date: '', videoSource: '', edition: '', video: '', audio: [], subs: [],
+    releaseDate: '', status: 'concluido', date: todayISO(), videoSource: '', edition: '', video: '', audio: [], subs: [],
     tools: '', description: '', fileName: '', size: '', location: '', link: '',
   };
 }
@@ -2539,13 +2660,15 @@ function toolHist() {
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
 }
 function sortRemuxes(arr) {
-  const byUpdated = (a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '');
+  const tie = (a, b) => collator.compare(a.title, b.title);
   const cmp = {
     recent: byUpdated,
     added: (a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''),
     title: (a, b) => collator.compare(a.title, b.title) || (a.year || 0) - (b.year || 0),
-    year: (a, b) => (a.year || 1e4) - (b.year || 1e4) || collator.compare(a.title, b.title),
-    date: (a, b) => (b.date || '').localeCompare(a.date || '') || byUpdated(a, b),
+    release_asc: (a, b) => byDate(releaseKey, 'asc')(a, b) || tie(a, b),
+    release_desc: (a, b) => byDate(releaseKey, 'desc')(a, b) || tie(a, b),
+    date_desc: (a, b) => byDate(digiKey, 'desc')(a, b) || byUpdated(a, b),
+    date_asc: (a, b) => byDate(digiKey, 'asc')(a, b) || byUpdated(a, b),
   }[R.sort] || byUpdated;
   return arr.sort(cmp);
 }
@@ -2705,6 +2828,7 @@ function tmResult(r, kind) {
     title: String((tv ? r.name : r.title) || ''),
     originalTitle: String((tv ? r.original_name : r.original_title) || ''),
     year: parseInt(tv ? r.first_air_date : r.release_date, 10) || null,
+    releaseDate: /^\d{4}-\d{2}-\d{2}$/.test((tv ? r.first_air_date : r.release_date) || '') ? (tv ? r.first_air_date : r.release_date) : '',
     poster: p ? TM.img + 'w500' + p : '', thumb: p ? TM.img + 'w185' + p : '',
     backdrop: b ? TM.img + 'w1280' + b : '', imdbId: '',
   };
@@ -2722,7 +2846,7 @@ function parseFilmQuery(q) {
 function applyTm(d, r, overwrite) {
   const same = d.tmdb && d.tmdb.id === r.id && d.tmdb.type === r.kind;
   d.tmdb = { type: r.kind, id: r.id, imdbId: r.imdbId || (same ? d.tmdb.imdbId : '') };
-  for (const k of ['title', 'originalTitle', 'year', 'poster', 'backdrop']) if ((overwrite || !d[k]) && r[k]) d[k] = r[k];
+  for (const k of ['title', 'originalTitle', 'year', 'releaseDate', 'poster', 'backdrop']) if ((overwrite || !d[k]) && r[k]) d[k] = r[k];
 }
 /* Completa o que a busca não traz (código do IMDb, fundo), sem mexer no que já foi preenchido. */
 async function enrichRemux(d, view) {
@@ -2732,7 +2856,7 @@ async function enrichRemux(d, view) {
   try { info = await TM.details(d.tmdb.type || 'movie', d.tmdb.id); } catch (e) { return; }
   if (d._ticket !== ticket || d.tmdb.id !== info.id) return;
   if (info.imdbId) d.tmdb.imdbId = info.imdbId;
-  for (const k of ['originalTitle', 'year', 'poster', 'backdrop']) if (!d[k] && info[k]) d[k] = info[k];
+  for (const k of ['originalTitle', 'year', 'releaseDate', 'poster', 'backdrop']) if (!d[k] && info[k]) d[k] = info[k];
   if (view && view.refresh) view.refresh();
 }
 const tmdbUrl = t => (t && t.id ? `https://www.themoviedb.org/${t.type === 'tv' ? 'tv' : 'movie'}/${t.id}` : '');
@@ -2773,6 +2897,7 @@ async function testTmdb(k) {
   try {
     await TM.req('/configuration');
     render();
+    backfillReleaseDates();
     return { ok: true, message: 'TMDb conectado.' };
   } catch (e) {
     if (e && e.code === 'auth') { TM.setKey(prev); return { ok: false, message: 'O TMDb não aceitou essa chave. Confira se copiou a “Chave da API” inteira, sem espaços.' }; }
@@ -2864,7 +2989,7 @@ function remuxRow(r) {
       h('span', { class: 'row-sub' }, sub || '—', r.video ? h('span', { class: 'mono' }, ' · ' + r.video) : null),
       h('span', { class: 'row-tags' },
         ...remuxLangs(r).map(s => h('span', { class: 'ltag', title: 'Áudio' }, s)),
-        subsTag(r), pill(r.status), r.date ? h('span', { class: 'date' }, fmtDate(r.date)) : null)));
+        subsTag(r), pill(r.status), dateTag(r, 'date'))));
 }
 function remuxCard(r) {
   const cv = remuxArt(r);
@@ -2874,11 +2999,11 @@ function remuxCard(r) {
   const langs = remuxLangs(r);
   return h('button', {
     class: 'card', type: 'button', onclick: () => openRemux(r.id),
-    'aria-label': [r.title || 'Sem título', r.year, langs.join(', '), statusLabel(r.status)].filter(Boolean).join(', '),
+    'aria-label': [r.title || 'Sem título', r.year, langs.join(', '), statusLabel(r.status), r.date && 'digitalizado em ' + fmtDate(r.date)].filter(Boolean).join(', '),
   },
   cv,
   h('span', { class: 'card-title' }, r.title || 'Sem título'),
-  h('span', { class: 'card-artist' }, [r.year, langs.join(' ')].filter(Boolean).join(' · ') || '—'));
+  h('span', { class: 'card-foot' }, h('span', { class: 'card-artist' }, [r.year, langs.join(' ')].filter(Boolean).join(' · ') || '—'), dateTag(r, 'card-date')));
 }
 
 function renderRemuxes() {
@@ -3106,17 +3231,27 @@ function filmFields(draft, onChange) {
   };
   const titleField = field('r-title', 'Título', 'title');
   titleField.append(titleErr);
+  // data de lançamento completa (vem do TMDb); usada na ordenação por lançamento
+  const rel = dateField(draft, 'releaseDate', {
+    id: 'r-rel', label: 'Data de lançamento', today: false,
+    onUserChange: iso => { if (iso) { draft.year = +iso.slice(0, 4); inputs.year.value = draft.year; } onChange(); },
+  });
   const det = h('details', { class: 'albumdata', open: manual || null },
     h('summary', null, icon('chevron', 18), manual ? 'Dados do filme' : 'Editar dados do filme'),
     h('div', { class: 'albumdata-body' },
       titleField,
       field('r-otitle', 'Título original', 'originalTitle'),
-      field('r-year', 'Ano', 'year', { inputmode: 'numeric', maxlength: '4' })));
+      field('r-year', 'Ano', 'year', { inputmode: 'numeric', maxlength: '4' }),
+      rel.el));
   return {
     el: det,
     manual,
     showTitleError() { det.open = true; titleErr.hidden = false; inputs.title.focus(); },
-    sync() { for (const [k, inp] of Object.entries(inputs)) if (document.activeElement !== inp) inp.value = draft[k] == null ? '' : draft[k]; },
+    validate() { if (rel.valid()) return true; det.open = true; rel.error(BAD_DATE); rel.focus(); return false; },
+    sync() {
+      for (const [k, inp] of Object.entries(inputs)) if (document.activeElement !== inp) inp.value = draft[k] == null ? '' : draft[k];
+      rel.sync();
+    },
   };
 }
 
@@ -3170,19 +3305,8 @@ function remuxFormView(draft, mode) {
     parts.film = filmFields(draft, () => { parts.hero.update(); touch(); });
     parts.hero = heroCard(draft, v);
 
-    // status e data
-    const dateInp = h('input', { class: 'inp', type: 'date', id: 'r-date', value: draft.date || '' });
-    dateInp.addEventListener('input', () => { draft.date = dateInp.value; touch(); });
-    const stField = h('div', { class: 'field', role: 'radiogroup', 'aria-labelledby': 'lbl-rstatus' },
-      h('div', { class: 'lbl', id: 'lbl-rstatus' }, 'Status'),
-      h('div', { class: 'choices' }, STATUS.map(s => choice('rstatus', s.id, s.label, draft.status === s.id, val => {
-        draft.status = val; touch();
-        if (val === 'concluido' && !draft.date) { draft.date = todayISO(); dateInp.value = draft.date; }
-      }, 'status st-' + s.id))));
-    const dateField = h('div', { class: 'field' },
-      h('label', { class: 'lbl', for: 'r-date' }, 'Data do remux'),
-      h('div', { class: 'inline-form' }, dateInp,
-        h('button', { class: 'btn', type: 'button', onclick: () => { draft.date = todayISO(); dateInp.value = draft.date; touch(); } }, 'Hoje')));
+    // status e data de digitalização
+    const sd = statusDateBlock(draft, { prefix: 'r', isNew: mode === 'new', touch });
 
     // vídeo
     const vsrc = sugField(draft, { id: 'r-vsrc', label: 'Fonte do vídeo', key: 'videoSource', onInput: touch, placeholder: 'UHD Blu-ray', sugs: () => uniq([...rhist('videoSource'), ...VIDEO_SOURCES]) });
@@ -3201,7 +3325,7 @@ function remuxFormView(draft, mode) {
     const na = draft.audio.length, ns = draft.subs.length;
     body.append(parts.hero);
     if (parts.film.manual) body.append(parts.film.el);
-    body.append(stField, dateField,
+    body.append(sd.status, sd.date.el,
       section('Vídeo', 'film', vsrc.el, ved.el, vspec.el),
       section(na ? `Áudio · ${na} ${plural(na, 'faixa', 'faixas')}` : 'Áudio', 'speaker', tracksBlock(draft, 'audio', v)),
       section(ns ? `Legendas · ${ns}` : 'Legendas', 'cc', tracksBlock(draft, 'subs', v)),
@@ -3221,6 +3345,7 @@ function remuxFormView(draft, mode) {
       class: 'btn btn-primary btn-block', type: 'button',
       onclick: async () => {
         if (!String(draft.title || '').trim()) { parts.film.showTitleError(); return; }
+        if (!parts.film.validate() || !sd.validate()) return;
         saveBtn.disabled = true;
         try {
           await saveRemux(draft);
@@ -3504,6 +3629,38 @@ function imagesView(draft, formV, type0) {
   return v;
 }
 
+/* Remuxes ligados ao TMDb e cadastrados antes de existir a data de lançamento: busca só essa data, em segundo plano.
+   Não muda a data de atualização do registro (não é uma edição sua). */
+const backfillTried = new Set();
+let backfilling = false;
+async function backfillReleaseDates() {
+  if (backfilling || !TM.key || navigator.onLine === false) return;
+  const todo = S.remuxes.filter(r => r.tmdb.id && !r.releaseDate && !backfillTried.has(r.id)).slice(0, 40);
+  if (!todo.length) return;
+  backfilling = true;
+  let changed = 0;
+  try {
+    for (const r of todo) {
+      backfillTried.add(r.id);
+      let info;
+      try { info = await TM.details(r.tmdb.type || 'movie', r.tmdb.id); } catch (e) {
+        if (e && (e.code === 'auth' || e.code === 'offline' || e.code === 'nokey')) break;
+        continue;
+      }
+      const i = S.remuxes.findIndex(x => x.id === r.id);
+      if (i < 0 || S.remuxes[i].releaseDate || !info.releaseDate) continue;
+      const upd = { ...S.remuxes[i], releaseDate: info.releaseDate };
+      await DB.put('remuxes', upd);
+      S.remuxes[i] = upd;
+      changed++;
+      await new Promise(res => setTimeout(res, 250));
+    }
+  } finally {
+    backfilling = false;
+  }
+  if (changed) render();
+}
+
 /* ---------- Salvar, excluir, ficha ---------- */
 async function saveRemux(draft) {
   const now = new Date().toISOString();
@@ -3734,7 +3891,7 @@ function exportRemuxCSV() {
   const tracks = (list, kind) => list.map(t => { const sm = trackSummary(t, kind); return `${sm.L.short} ${sm.title}${sm.meta ? ` (${sm.meta})` : ''}${t.isDefault ? ' [padrão]' : ''}`; }).join(' | ');
   const cols = [
     ['Título', r => r.title], ['Título original', r => r.originalTitle], ['Ano', r => r.year || ''],
-    ['Status', r => statusLabel(r.status)], ['Data do remux', r => fmtDate(r.date)],
+    ['Status', r => statusLabel(r.status)], ['Data de digitalização', r => fmtDate(r.date)], ['Lançamento', r => fmtDate(r.releaseDate) || r.year || ''],
     ['Fonte do vídeo', r => r.videoSource], ['Edição do disco', r => r.edition], ['Vídeo', r => r.video],
     ['Idiomas do áudio', r => remuxLangs(r).join(' ')], ['Faixas de áudio', r => tracks(r.audio, 'audio')],
     ['Legendas', r => tracks(r.subs, 'subs')], ['Descrição do que fiz', r => r.description], ['Ferramentas', r => r.tools],
@@ -3776,6 +3933,7 @@ async function importFile(file) {
   S.items = mi.all;
   S.remuxes = mr.all;
   render();
+  backfillReleaseDates();
   ensurePersist();
   toast(`Importação: ${fmtN(added)} ${plural(added, 'novo', 'novos')}, ${fmtN(updated)} ${plural(updated, 'atualizado', 'atualizados')}${kept ? `, ${fmtN(kept)} já em dia` : ''}.`, { duration: 6000 });
 }
@@ -3785,8 +3943,16 @@ function openAdd() { Sheet.show(S.tab === 'remux' ? filmSearchView('new') : sear
 function openSettings() { Sheet.show(settingsView()); }
 
 const SORTS = {
-  digi: [['recent', 'Atualizados'], ['added', 'Adicionados'], ['artist', 'Artista'], ['title', 'Título'], ['year', 'Ano'], ['date', 'Data da digitalização']],
-  remux: [['recent', 'Atualizados'], ['added', 'Adicionados'], ['title', 'Título'], ['year', 'Ano'], ['date', 'Data do remux']],
+  digi: [
+    ['date_desc', 'Digitalização: mais recentes'], ['date_asc', 'Digitalização: mais antigas'],
+    ['release_asc', 'Lançamento: mais antigos'], ['release_desc', 'Lançamento: mais novos'],
+    ['artist', 'Artista (A–Z)'], ['title', 'Título (A–Z)'], ['recent', 'Atualizados'], ['added', 'Adicionados'],
+  ],
+  remux: [
+    ['release_asc', 'Lançamento: mais antigos'], ['release_desc', 'Lançamento: mais novos'],
+    ['date_desc', 'Digitalização: mais recentes'], ['date_asc', 'Digitalização: mais antigas'],
+    ['title', 'Título (A–Z)'], ['recent', 'Atualizados'], ['added', 'Adicionados'],
+  ],
 };
 function paintControls() {
   const remux = S.tab === 'remux';
@@ -3798,6 +3964,7 @@ function paintControls() {
   const sortSel = $('#sort');
   const opts = SORTS[remux ? 'remux' : 'digi'];
   sortSel.replaceChildren(...opts.map(([v, l]) => h('option', { value: v }, l)));
+  Fs.sort = SORT_ALIASES[Fs.sort] || Fs.sort;
   if (!opts.some(o => o[0] === Fs.sort)) Fs.sort = 'recent';
   sortSel.value = Fs.sort;
   $('#view-list').setAttribute('aria-pressed', String(Fs.view === 'list'));
@@ -3871,6 +4038,7 @@ async function init() {
     S.remuxes = [];
   }
   render();
+  backfillReleaseDates();
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
     navigator.serviceWorker.register('sw.js').catch(() => { /* offline indisponível */ });

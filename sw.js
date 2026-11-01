@@ -1,6 +1,6 @@
 /* Acervo: guarda os arquivos do app para abrir sem internet.
    Busca e capas (Discogs, MusicBrainz, iTunes, TMDb, OMDb) vão direto para a rede. */
-const CACHE = 'acervo-v4';
+const CACHE = 'acervo-v5';
 const SHELL = [
   './',
   'index.html',
