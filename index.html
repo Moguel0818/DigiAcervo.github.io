@@ -149,6 +149,13 @@ svg { flex: none; }
   background: transparent; color: var(--label-ink-2); font-weight: 650; font-size: .95rem;
 }
 .tab:first-child { margin-left: -10px; }
+.tabs { overflow-x: auto; scrollbar-width: none; padding-bottom: 3px; margin-bottom: -3px; }
+.tabs::-webkit-scrollbar { display: none; }
+@media (max-width: 430px) {
+  .tab { padding-inline: 8px; gap: 5px; font-size: .9rem; }
+  .tab:first-child { margin-left: -8px; }
+  .tab[aria-selected="true"]::after { left: 8px; right: 8px; }
+}
 .tab:hover { color: var(--label-ink); background: var(--label-hover); }
 .tab .c { font-family: var(--font-mono); font-size: .78rem; font-weight: 400; font-variant-numeric: tabular-nums; }
 .tab[aria-selected="true"] { color: var(--label-ink); }
@@ -512,6 +519,20 @@ details.albumdata[open] > summary svg { transform: none; }
 }
 .cover .tl { position: absolute; top: 6px; left: 6px; background: rgb(10 15 20 / .74); color: #fff; }
 
+/* Recuperados: miniaturas 16:9, duração e selo “único”, como no YouTube */
+#items.grid.wide { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+@media (min-width: 720px) { #items.grid.wide { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); } }
+.row.vrow { grid-template-columns: 112px minmax(0, 1fr); contain-intrinsic-size: auto 96px; }
+.dur { position: absolute; right: 6px; bottom: 6px; padding: 1px 5px; border-radius: 4px; background: rgb(0 0 0 / .8); color: #fff; font-family: var(--font-mono); font-size: .72rem; font-variant-numeric: tabular-nums; }
+.ltag.uniq, .cover .tl.uniq { background: var(--redline); color: #fff; }
+.vhead { display: grid; gap: 14px; padding: 14px; background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; }
+@media (min-width: 560px) { .vhead { grid-template-columns: 260px minmax(0, 1fr); align-items: start; } }
+.vhead-info { display: grid; gap: 4px; min-width: 0; align-content: start; }
+.vhead .hero-edit { top: 8px; bottom: auto; }
+.btn-sm { min-height: 36px; padding: 0 12px; font-size: .86rem; gap: 6px; }
+.vlinks { gap: 6px; }
+.framevid { width: 100%; max-height: 360px; background: #000; border-radius: 10px; }
+
 /* Cabeçalho do remux, no estilo da página de um filme no Jellyfin */
 .hero { position: relative; overflow: hidden; border-radius: 14px; background: var(--label); color: var(--label-ink); }
 .hero-bg { position: absolute; inset: 0; }
@@ -599,6 +620,7 @@ details.albumdata[open] > summary svg { transform: none; }
   <div class="wrap gutter tabs" role="tablist" aria-label="Seções do acervo">
     <button class="tab" type="button" role="tab" id="tab-digi" aria-selected="true" aria-controls="main-panel">Digitalizações <span class="c" id="count-digi">0</span></button>
     <button class="tab" type="button" role="tab" id="tab-remux" aria-selected="false" aria-controls="main-panel" tabindex="-1">Remuxes <span class="c" id="count-remux">0</span></button>
+    <button class="tab" type="button" role="tab" id="tab-video" aria-selected="false" aria-controls="main-panel" tabindex="-1">Recuperados <span class="c" id="count-video">0</span></button>
   </div>
 </header>
 
@@ -690,7 +712,7 @@ details.albumdata[open] > summary svg { transform: none; }
 'use strict';
 
 /* ================= Constantes ================= */
-const VERSION = '1.4';
+const VERSION = '1.5';
 
 const MEDIA = [
   { id: 'vinil', label: 'Vinil', dg: 'Vinyl', icon: 'vinyl',
@@ -783,6 +805,7 @@ const ICONS = {
   pencil: '<path d="M15.5 5.5l3 3L9 18H6v-3z"/>',
   clip: '<rect x="6" y="5" width="12" height="15" rx="2"/><path d="M9.5 5V3.8h5V5M9 10h6M9 13.5h6M9 17h3.5"/>',
   calendar: '<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
+  play: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.2v5.6l4.8-2.8z"/>',
 };
 
 /* ================= Utilidades ================= */
@@ -857,11 +880,12 @@ const DB = {
     if (!('indexedDB' in window)) { this.useMem(); return; }
     try {
       this.db = await new Promise((resolve, reject) => {
-        const r = indexedDB.open('acervo', 2);
+        const r = indexedDB.open('acervo', 3);
         r.onupgradeneeded = () => {
           const db = r.result;
           if (!db.objectStoreNames.contains('items')) db.createObjectStore('items', { keyPath: 'id' });
           if (!db.objectStoreNames.contains('remuxes')) db.createObjectStore('remuxes', { keyPath: 'id' });
+          if (!db.objectStoreNames.contains('videos')) db.createObjectStore('videos', { keyPath: 'id' });
         };
         r.onsuccess = () => resolve(r.result);
         r.onerror = () => reject(r.error);
@@ -876,7 +900,7 @@ const DB = {
       this.useMem();
     }
   },
-  useMem() { this.mem = { items: new Map(), remuxes: new Map() }; },
+  useMem() { this.mem = { items: new Map(), remuxes: new Map(), videos: new Map() }; },
   store(name, mode) { return this.db.transaction(name, mode).objectStore(name); },
   wrap(req) { return new Promise((res, rej) => { req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); }); },
   async all(name) { return this.mem ? [...this.mem[name].values()] : this.wrap(this.store(name, 'readonly').getAll()); },
@@ -1139,9 +1163,10 @@ async function testToken(t) {
 
 /* ================= Estado e lista principal ================= */
 const S = {
-  tab: store.get('tab') === 'remux' ? 'remux' : 'digi',
+  tab: ['remux', 'video'].includes(store.get('tab')) ? store.get('tab') : 'digi',
   items: [],
   remuxes: [],
+  videos: [],
   // filtros da aba Digitalizações
   q: '',
   medium: '',
@@ -1157,7 +1182,17 @@ const R = {
   sort: store.get('rsort') || 'recent',
   view: store.get('rview') === 'list' ? 'list' : 'grid',
 };
-const F = () => (S.tab === 'remux' ? R : S);
+// filtros da aba Recuperados (vídeos apagados que você recuperou)
+const V = {
+  q: '',
+  cat: '',
+  status: '',
+  sort: store.get('vsort') || 'date_desc',
+  view: store.get('vview') === 'list' ? 'list' : 'grid',
+};
+const TABS = ['digi', 'remux', 'video'];
+const F = () => (S.tab === 'remux' ? R : S.tab === 'video' ? V : S);
+const tabList = () => (S.tab === 'remux' ? S.remuxes : S.tab === 'video' ? S.videos : S.items);
 
 const hayCache = new WeakMap();
 function hay(it) {
@@ -1232,7 +1267,7 @@ function mtag(medium) {
   const M = MEDIUM[medium] || MEDIUM.outro;
   return h('span', { class: 'mtag' }, icon(M.icon, 13), M.label);
 }
-function pill(status) { return h('span', { class: 'pill st-' + status }, statusLabel(status)); }
+function pill(status, label = statusLabel(status)) { return h('span', { class: 'pill st-' + status }, label); }
 
 function itemRow(it) {
   const meta = [it.year, [it.label, it.catno].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
@@ -1256,18 +1291,19 @@ function itemCard(it) {
 function render() {
   $('#count-digi').textContent = fmtN(S.items.length);
   $('#count-remux').textContent = fmtN(S.remuxes.length);
+  $('#count-video').textContent = fmtN(S.videos.length);
   $('#fab').hidden = false;
-  if (S.tab === 'remux') renderRemuxes(); else renderDigi();
+  if (S.tab === 'remux') renderRemuxes(); else if (S.tab === 'video') renderVideos(); else renderDigi();
   renderNudge();
 }
 
 /* Barra e legenda por status, compartilhadas pelas duas abas (F = estado de filtros da aba). */
-function paintSummary(counts, Fs) {
+function paintSummary(counts, Fs, legend = legendLabel) {
   $('#bar').replaceChildren(...LEGEND_ORDER.filter(s => counts[s]).map(s => { const sp = h('span', { class: 'st-' + s }); sp.style.flexGrow = counts[s]; return sp; }));
   $('#legend').replaceChildren(...LEGEND_ORDER.map(s => h('button', {
     type: 'button', class: 'st-' + s, 'aria-pressed': String(Fs.status === s),
     onclick: () => { Fs.status = Fs.status === s ? '' : s; render(); },
-  }, h('span', { class: 'dot' }), h('span', { class: 'n' }, fmtN(counts[s])), legendLabel(s, counts[s]))));
+  }, h('span', { class: 'dot' }), h('span', { class: 'n' }, fmtN(counts[s])), legend(s, counts[s]))));
 }
 
 function renderDigi() {
@@ -1331,7 +1367,7 @@ function renderEmpty(el) {
 
 function renderNudge() {
   const el = $('#nudge');
-  const n = S.items.length + S.remuxes.length;
+  const n = S.items.length + S.remuxes.length + S.videos.length;
   const last = store.get('last_export');
   const snooze = +(store.get('nudge_snooze') || 0);
   const days = last ? (Date.now() - Date.parse(last)) / 864e5 : Infinity;
@@ -1408,7 +1444,7 @@ function onKey(e) {
     }
     return;
   }
-  if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '') && (S.tab === 'remux' ? S.remuxes : S.items).length) {
+  if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '') && tabList().length) {
     e.preventDefault();
     $('#filter-q').focus();
   }
@@ -1524,31 +1560,32 @@ function dateField(obj, key, { id, label, today = true, onUserChange }) {
 
 /* Concluído precisa da data em que foi digitalizado. */
 const needsDate = it => it.status === 'concluido';
-function dateTag(it, cls) {
-  if (it.date) return h('span', { class: cls, title: 'Data de digitalização' }, fmtDate(it.date));
-  if (needsDate(it)) return h('span', { class: cls + ' missing', title: 'Concluído sem data de digitalização' }, 'sem data');
+function dateTag(it, cls, what = 'Data de digitalização') {
+  if (it.date) return h('span', { class: cls, title: what }, fmtDate(it.date));
+  if (needsDate(it)) return h('span', { class: cls + ' missing', title: `Sem ${what.toLowerCase()}` }, 'sem data');
   return null;
 }
 
 /* Status + data de digitalização, iguais nas duas abas. Num cadastro novo a data já vem com hoje;
    se o status mudar para "na fila" ou "em andamento" antes de você mexer na data, ela é limpa. */
-function statusDateBlock(draft, { prefix, isNew, touch }) {
+// clearOn: status em que a data automática (ainda não mexida) é apagada, porque nada foi feito ainda.
+function statusDateBlock(draft, { prefix, isNew, touch, labels = null, dateLabel = 'Data de digitalização', needMsg = 'Informe quando você digitalizou (ou toque em Hoje).', clearOn = ['fila', 'andamento'] }) {
   let auto = isNew && !!draft.date;
-  const df = dateField(draft, 'date', { id: prefix + '-date', label: 'Data de digitalização', onUserChange: () => { auto = false; touch(); } });
+  const df = dateField(draft, 'date', { id: prefix + '-date', label: dateLabel, onUserChange: () => { auto = false; touch(); } });
   const field = h('div', { class: 'field', role: 'radiogroup', 'aria-labelledby': `lbl-${prefix}status` },
     h('div', { class: 'lbl', id: `lbl-${prefix}status` }, 'Status'),
-    h('div', { class: 'choices' }, STATUS.map(s => choice(prefix + 'status', s.id, s.label, draft.status === s.id, val => {
+    h('div', { class: 'choices' }, STATUS.map(s => choice(prefix + 'status', s.id, labels ? labels[s.id] : s.label, draft.status === s.id, val => {
       draft.status = val;
       touch();
       if (val === 'concluido' && !draft.date) { df.set(todayISO()); auto = true; }
-      else if ((val === 'fila' || val === 'andamento') && auto) df.set('');
+      else if (clearOn.includes(val) && auto) df.set('');
     }, 'status st-' + s.id))));
   return {
     status: field,
     date: df,
     validate() {
       if (!df.valid()) { df.error(BAD_DATE); df.focus(); return false; }
-      if (needsDate(draft) && !draft.date) { df.error('Informe quando você digitalizou (ou toque em Hoje).'); df.focus(); return false; }
+      if (needsDate(draft) && !draft.date) { df.error(needMsg); df.focus(); return false; }
       return true;
     },
   };
@@ -2714,6 +2751,8 @@ function artOrigin(u) {
     const host = new URL(u).hostname;
     if (/tmdb\.org$/.test(host)) return 'TheMovieDb';
     if (/media-amazon\.com$/.test(host)) return 'The Open Movie Database';
+    if (host === 'web.archive.org') return 'Wayback Machine';
+    if (/(^|\.)ytimg\.com$|(^|\.)youtube\.com$/.test(host)) return 'YouTube';
     if (/(coverartarchive|archive)\.org$/.test(host)) return 'Cover Art Archive (MusicBrainz)';
     if (/discogs\.com$/.test(host)) return 'Discogs';
     if (/mzstatic\.com$/.test(host)) return 'iTunes';
@@ -3732,6 +3771,657 @@ async function copyText(text) {
   return ok;
 }
 
+/* =====================================================================
+   RECUPERADOS
+   Vídeos apagados do YouTube que você conseguiu recuperar (YouTube Video
+   Finder, Wayback Machine, GhostArchive, Filmot…): dados do upload, o que
+   tem no vídeo, motivo provável da remoção, de onde veio a cópia e onde
+   ela está salva agora. A miniatura pode vir do Wayback (procurada sozinha
+   pelo ID), de um quadro do próprio vídeo ou de uma imagem sua.
+   ===================================================================== */
+// Mesmos quatro status das outras abas, com nomes de mídia perdida.
+const VSTATUS = { concluido: 'Recuperado', andamento: 'Parcial', fila: 'Procurando', refazer: 'Perdido' };
+const vStatusLabel = id => VSTATUS[id] || VSTATUS.fila;
+const vLegendLabel = (id, n) => ({ concluido: n === 1 ? 'recuperado' : 'recuperados', andamento: n === 1 ? 'parcial' : 'parciais', fila: 'procurando', refazer: n === 1 ? 'perdido' : 'perdidos' })[id];
+const VCATS = [['clipe', 'Videoclipe'], ['tv', 'Programa de TV'], ['show', 'Show / ao vivo'], ['entrevista', 'Entrevista'], ['comercial', 'Comercial'], ['caseiro', 'Vlog / caseiro'], ['outro', 'Outro']];
+const VCAT = Object.fromEntries(VCATS);
+// [id, nome, mensagem que o YouTube costuma mostrar]
+const VREASONS = [
+  ['copyright', 'Direitos autorais', 'Este vídeo não está mais disponível devido a uma reivindicação de direitos autorais de …'],
+  ['conta', 'Conta encerrada', 'Este vídeo não está mais disponível porque a conta do YouTube associada a ele foi encerrada.'],
+  ['autor', 'Removido pelo autor', 'Este vídeo foi removido pelo usuário que o enviou.'],
+  ['regras', 'Regras do YouTube', 'Este vídeo foi removido por violar as diretrizes ou os Termos de Serviço do YouTube.'],
+  ['privado', 'Ficou privado', 'Vídeo privado.'],
+  ['desconhecido', 'Não sei', ''],
+];
+const VREASON = Object.fromEntries(VREASONS.map(r => [r[0], r]));
+const VSOURCES = [['wayback', 'Wayback Machine'], ['ghost', 'GhostArchive'], ['ia', 'Internet Archive (item)'], ['filmot', 'Filmot (só metadados)'], ['propria', 'Cópia própria / gravação'], ['outro', 'Outro']];
+const VSOURCE = Object.fromEntries(VSOURCES);
+const VQUALITY = ['FLV 320×240', 'FLV 480×360', 'FLV 640×360', 'MP4 360p', 'MP4 480p', 'MP4 720p', 'WebM 360p', '3GP 176×144'];
+
+// ID do YouTube: 11 caracteres (mesma regra do YouTube Video Finder)
+const YT_ID = /^[A-Za-z0-9_-]{10}[AEIMQUYcgkosw048]$/;
+function ytIdFrom(s) {
+  const t = String(s || '').trim();
+  if (YT_ID.test(t)) return t;
+  const m = t.match(/(?:youtube(?:-nocookie)?\.com\/(?:watch\/?\?(?:[^#]*&)?v=|v\/|embed\/|shorts\/|video\/|live\/)|youtu\.be\/|filmot\.com\/video\/)([A-Za-z0-9_-]{10}[AEIMQUYcgkosw048])(?![A-Za-z0-9_-])/);
+  return m ? m[1] : '';
+}
+// data da captura a partir de um link do Wayback (…/web/20110720091713/…)
+function waybackDate(u) {
+  const m = /web\.archive\.org\/web\/(\d{4})(\d{2})(\d{2})/.exec(u || '');
+  return m ? parseBR(`${m[3]}/${m[2]}/${m[1]}`) : '';
+}
+function sourceFromUrl(u) {
+  if (/web\.archive\.org\/web\//.test(u)) return 'wayback';
+  if (/ghostarchive\.org/.test(u)) return 'ghost';
+  if (/archive\.org\/(details|download)\//.test(u)) return 'ia';
+  if (/filmot\.com/.test(u)) return 'filmot';
+  return '';
+}
+const archiveLinks = id => [
+  ['YouTube Video Finder', `https://findyoutubevideo.thetechrobo.ca/?q=${id}`],
+  ['Wayback Machine', `https://web.archive.org/web/*/https://www.youtube.com/watch?v=${id}*`],
+  ['Filmot', `https://filmot.com/video/${id}`],
+  ['GhostArchive', `https://ghostarchive.org/search?term=${id}`],
+  ['YouTube', `https://www.youtube.com/watch?v=${id}`],
+];
+
+function normalizeVideo(r) {
+  const s = (v, max = 2000) => (v == null ? '' : String(v)).slice(0, max);
+  const iso = v => (/^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : '');
+  const now = new Date().toISOString();
+  const ytId = YT_ID.test(r.ytId || '') ? r.ytId : ytIdFrom(r.url);
+  return {
+    id: s(r.id, 80) || uid(),
+    createdAt: s(r.createdAt, 40) || now,
+    updatedAt: s(r.updatedAt, 40) || now,
+    url: safeHttp(String(r.url || '').trim()) || (ytId ? `https://www.youtube.com/watch?v=${ytId}` : ''),
+    ytId,
+    title: s(r.title, 500).trim(),
+    channel: s(r.channel, 300).trim(),
+    uploadDate: iso(r.uploadDate),
+    duration: s(r.duration, 20).trim(),
+    views: s(r.views, 40).trim(),
+    category: VCAT[r.category] ? r.category : 'outro',
+    unique: r.unique === true,
+    content: s(r.content, 20000),
+    description: s(r.description, 20000),
+    reason: VREASON[r.reason] ? r.reason : 'desconhecido',
+    reasonNote: s(r.reasonNote, 600).trim(),
+    status: STATUS_IDS.includes(r.status) ? r.status : 'concluido',
+    date: iso(r.date),
+    source: VSOURCE[r.source] ? r.source : '',
+    sourceUrl: safeHttp(String(r.sourceUrl || '').trim()),
+    captureDate: iso(r.captureDate),
+    quality: s(r.quality, 120).trim(),
+    location: s(r.location, 400).trim(),
+    fileName: s(r.fileName, 500).trim(),
+    size: s(r.size, 60).trim(),
+    reupload: safeHttp(String(r.reupload || '').trim()),
+    notes: s(r.notes, 8000),
+    art: safeArt(r.art),
+    artFull: safeArt(r.art) ? safeHttp(String(r.artFull || '')) : '',
+  };
+}
+function blankVideo() {
+  return {
+    id: null, createdAt: null, url: '', ytId: '', title: '', channel: '', uploadDate: '', duration: '', views: '',
+    category: 'clipe', unique: false, content: '', description: '', reason: 'desconhecido', reasonNote: '',
+    status: 'concluido', date: todayISO(), source: '', sourceUrl: '', captureDate: '', quality: '',
+    location: '', fileName: '', size: '', reupload: '', notes: '', art: '', artFull: '',
+  };
+}
+const vTitle = v => v.title || (v.ytId ? `Vídeo ${v.ytId}` : 'Sem título');
+const vhayCache = new WeakMap();
+function vhay(v) {
+  let x = vhayCache.get(v);
+  if (!x) {
+    x = norm([v.title, v.channel, v.ytId, v.url, v.content, v.description, (VREASON[v.reason] || [])[1], v.reasonNote, VCAT[v.category],
+      VSOURCE[v.source], v.sourceUrl, v.quality, v.location, v.fileName, v.notes, v.uploadDate && v.uploadDate.slice(0, 4)].join(' '));
+    vhayCache.set(v, x);
+  }
+  return x;
+}
+function vhist(key) {
+  const counts = new Map();
+  for (const v of S.videos) { const x = String(v[key] || '').trim(); if (x) counts.set(x, (counts.get(x) || 0) + 1); }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
+}
+function sortVideos(arr) {
+  const tie = (a, b) => collator.compare(vTitle(a), vTitle(b));
+  const upKey = v => v.uploadDate || '';
+  const cmp = {
+    date_desc: (a, b) => byDate(digiKey, 'desc')(a, b) || byUpdated(a, b),
+    date_asc: (a, b) => byDate(digiKey, 'asc')(a, b) || byUpdated(a, b),
+    upload_asc: (a, b) => byDate(upKey, 'asc')(a, b) || tie(a, b),
+    upload_desc: (a, b) => byDate(upKey, 'desc')(a, b) || tie(a, b),
+    title: tie,
+    channel: (a, b) => (!a.channel !== !b.channel ? (a.channel ? -1 : 1) : collator.compare(a.channel, b.channel)) || tie(a, b),
+    recent: byUpdated,
+    added: (a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''),
+  }[V.sort] || byUpdated;
+  return arr.sort(cmp);
+}
+const vArt = (v, eager = false) => artEl(v.art, { seed: v.ytId || v.title || '', text: initials({ title: v.title || v.ytId }), shape: 'wide', ic: 'play', eager });
+
+/* ---------- Miniaturas ---------- */
+function imageSize(url, timeout = 15000) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const t = setTimeout(() => resolve({ ok: false }), timeout);
+    img.referrerPolicy = 'no-referrer';
+    img.onload = () => { clearTimeout(t); resolve({ ok: img.naturalWidth > 0, w: img.naturalWidth, h: img.naturalHeight }); };
+    img.onerror = () => { clearTimeout(t); resolve({ ok: false }); };
+    img.src = url;
+  });
+}
+// Quando um vídeo some, o YouTube devolve uma imagem cinza de 120×90 no lugar da miniatura.
+const ytThumbs = id => ['maxresdefault', 'sddefault', 'hqdefault', 'mqdefault'].map(n => {
+  const u = `https://i.ytimg.com/vi/${id}/${n}.jpg`;
+  return { src: 'YouTube', variant: n, thumb: u, art: u, full: u, strict: true };
+});
+// Sem o índice do Wayback, pede direto as cópias mais comuns da miniatura (o Wayback leva à captura mais próxima).
+function waybackGuesses(id) {
+  const raw = (host, file) => `https://web.archive.org/web/2im_/http://${host}/vi/${id}/${file}`;
+  return [
+    ['i.ytimg.com', 'maxresdefault.jpg'], ['i.ytimg.com', 'sddefault.jpg'], ['i.ytimg.com', 'hqdefault.jpg'],
+    ['i1.ytimg.com', 'hqdefault.jpg'], ['i2.ytimg.com', 'hqdefault.jpg'], ['i3.ytimg.com', 'hqdefault.jpg'], ['i4.ytimg.com', 'hqdefault.jpg'],
+    ['img.youtube.com', '0.jpg'], ['i.ytimg.com', 'mqdefault.jpg'], ['i1.ytimg.com', 'default.jpg'], ['i.ytimg.com', 'default.jpg'], ['img.youtube.com', 'default.jpg'],
+  ].map(([host, file]) => ({ src: 'Wayback Machine', variant: `${host} · ${file.replace('.jpg', '')}`, thumb: raw(host, file), art: raw(host, file), full: raw(host, file) }));
+}
+const THUMB_ORDER = ['maxresdefault', 'sddefault', 'hqdefault', '0.', 'high', 'mqdefault', 'medium', 'default', '1.', '2.', '3.'];
+const thumbRank = u => { const i = THUMB_ORDER.findIndex(k => u.includes('/' + k) || u.includes(k)); return i < 0 ? 99 : i; };
+// Índice do Wayback (CDX): lista cada miniatura arquivada com a data. Se o navegador bloquear, cai nas tentativas diretas.
+async function waybackThumbs(id) {
+  const prefixes = ['i.ytimg.com/vi/', 'i1.ytimg.com/vi/', 'i2.ytimg.com/vi/', 'i3.ytimg.com/vi/', 'i4.ytimg.com/vi/', 'img.youtube.com/vi/', 's.ytimg.com/vi/', 'i.ytimg.com/vi_webp/'];
+  const res = await Promise.allSettled(prefixes.map(async p => {
+    const r = await fetch(`https://web.archive.org/cdx/search/cdx?url=${encodeURIComponent(p + id + '/*')}&collapse=digest&filter=statuscode:200&output=json&limit=50`);
+    if (!r.ok) return [];
+    const data = await r.json();
+    return (Array.isArray(data) ? data.slice(1) : []).map(x => ({ ts: String(x[1] || ''), original: String(x[2] || ''), digest: x[5] }));
+  }));
+  if (res.every(x => x.status === 'rejected')) throw { code: 'network' };
+  const seen = new Set();
+  const rows = res.flatMap(x => (x.status === 'fulfilled' ? x.value : [])).filter(x => /^\d{8,14}$/.test(x.ts) && /^https?:\/\//.test(x.original) && !seen.has(x.digest) && seen.add(x.digest));
+  rows.sort((a, b) => thumbRank(a.original) - thumbRank(b.original) || b.ts.localeCompare(a.ts));
+  return rows.slice(0, 16).map(x => {
+    const u = `https://web.archive.org/web/${x.ts}im_/${x.original}`;
+    return { src: 'Wayback Machine', variant: x.original.replace(/^https?:\/\//, '').replace(`/vi/${id}/`, ' · ').replace(/\.(jpg|webp)$/, ''), captured: `${x.ts.slice(0, 4)}-${x.ts.slice(4, 6)}-${x.ts.slice(6, 8)}`, thumb: u, art: u, full: u };
+  });
+}
+// Carrega as candidatas em paralelo e devolve as que existem (sem a imagem cinza do YouTube), na ordem de qualidade.
+async function loadedThumbs(cands) {
+  const sizes = await Promise.all(cands.map(c => imageSize(c.thumb)));
+  return cands.map((c, i) => ({ ...c, ...sizes[i] })).filter(c => c.ok && !(c.strict && c.w <= 120 && c.h <= 90));
+}
+async function bestThumb(id) {
+  const yt = await loadedThumbs(ytThumbs(id));
+  if (yt.length) return yt[0];
+  let list = null;
+  try { list = await waybackThumbs(id); } catch (e) { list = null; }
+  if (list && list.length) {
+    const ok = await loadedThumbs(list.slice(0, 4));
+    if (ok.length) return ok[0];
+  }
+  const g = await loadedThumbs(waybackGuesses(id));
+  return g.find(c => c.w > 120) || g[0] || null;
+}
+async function autoThumb(draft, view) {
+  const id = draft.ytId;
+  if (!id || draft.art) return;
+  const ticket = (draft._thumbTicket = (draft._thumbTicket || 0) + 1);
+  draft._thumbBusy = true;
+  if (view.refresh) view.refresh();
+  let best = null;
+  try { best = await bestThumb(id); } catch (e) { best = null; }
+  if (draft._thumbTicket !== ticket) return;
+  draft._thumbBusy = false;
+  if (best && !draft.art && draft.ytId === id) { draft.art = best.art; draft.artFull = best.full; view.dirty = true; }
+  draft._thumbMiss = !best && !draft.art;
+  if (view.refresh) view.refresh();
+}
+
+/* Quadro do vídeo salvo: abre o arquivo recuperado no próprio navegador (não sai do aparelho) e captura um quadro. */
+function frameSection(onPick) {
+  const fileIn = h('input', { type: 'file', accept: 'video/*,.mkv,.flv,.webm,.mp4,.mov,.avi,.3gp', hidden: true, id: 'frame-file' });
+  const vid = h('video', { class: 'framevid', controls: true, playsinline: true, muted: true, preload: 'auto', hidden: true });
+  const msg = h('p', { class: 'msg', role: 'status' });
+  const useBtn = h('button', {
+    class: 'btn btn-primary', type: 'button', hidden: true,
+    onclick: () => {
+      try {
+        const w0 = vid.videoWidth, h0 = vid.videoHeight;
+        if (!w0 || !h0) throw new Error('sem quadro');
+        const k = Math.min(1, 1280 / w0, 720 / h0);
+        const c = document.createElement('canvas');
+        c.width = Math.round(w0 * k); c.height = Math.round(h0 * k);
+        c.getContext('2d').drawImage(vid, 0, 0, c.width, c.height);
+        onPick(c.toDataURL('image/jpeg', 0.88), '');
+      } catch (e) {
+        msg.textContent = 'Não consegui tirar o quadro. Pause o vídeo no ponto certo e tente de novo.';
+      }
+    },
+  }, icon('image', 18), 'Usar este quadro');
+  let url = '';
+  fileIn.addEventListener('change', () => {
+    const f = fileIn.files && fileIn.files[0];
+    fileIn.value = '';
+    if (!f) return;
+    if (url) URL.revokeObjectURL(url);
+    url = URL.createObjectURL(f);
+    vid.hidden = true; useBtn.hidden = true;
+    msg.replaceChildren(...spinnerLine('Abrindo o vídeo…'));
+    vid.onloadeddata = () => { msg.textContent = 'Pause no quadro que você quer e toque em “Usar este quadro”.'; vid.hidden = false; useBtn.hidden = false; };
+    vid.onerror = () => {
+      msg.textContent = /\.flv$/i.test(f.name)
+        ? 'O navegador não abre FLV. Converta para MP4 e tente de novo (ex.: ffmpeg -i video.flv -c:v libx264 -c:a aac video.mp4) ou envie uma imagem.'
+        : 'O navegador não conseguiu abrir esse vídeo. Tente um MP4 ou WebM, ou envie uma imagem.';
+    };
+    vid.src = url;
+  });
+  return section('Quadro do vídeo salvo', 'film',
+    h('p', null, 'Abra o arquivo que você recuperou e escolha um quadro para usar como miniatura. O vídeo não sai do aparelho.'),
+    h('div', { class: 'btnrow' }, h('button', { class: 'btn', type: 'button', onclick: () => fileIn.click() }, icon('upload', 18), 'Abrir vídeo')),
+    fileIn, msg, vid, h('div', { class: 'btnrow' }, useBtn));
+}
+
+/* ---------- Tela: miniatura ---------- */
+function vThumbView(draft, formV) {
+  const st = { wb: {}, yt: {} };
+  const v = { title: 'Miniatura' };
+  let secs = {};
+  v.render = body => {
+    const cur = draft.art;
+    const curBlock = h('div', { class: 'curimg wide' },
+      vArt(draft, true),
+      h('div', { class: 'curimg-info' },
+        h('div', { class: 'lbl' }, 'Miniatura atual'),
+        h('p', { class: 'msg' }, cur ? artOrigin(cur) : 'Nenhuma ainda'),
+        h('div', { class: 'btnrow' },
+          cur ? h('button', { class: 'btn', type: 'button', onclick: () => downloadArt(draft.artFull || cur, vTitle(draft)) }, icon('download', 18), 'Baixar') : null,
+          cur ? h('button', { class: 'btn btn-danger', type: 'button', onclick: () => { draft.art = ''; draft.artFull = ''; formV.dirty = true; Sheet.rerender(); } }, icon('trash', 18), 'Remover') : null)));
+    const mkSec = (title, ic) => {
+      const count = h('span', { class: 'sect-c' });
+      const status = h('div', { class: 'status-stack', role: 'status' });
+      const grid = h('div', { class: 'imggrid wide' });
+      return { el: h('section', { class: 'sect' }, h('h3', null, icon(ic, 18), title, count), status, grid), count, status, grid };
+    };
+    secs = { wb: mkSec('Arquivada no Wayback Machine', 'layers'), yt: mkSec('No YouTube', 'play') };
+    body.append(
+      h('p', { class: 'hint' }, h('strong', null, vTitle(draft)), draft.channel ? ` · ${draft.channel}` : ''),
+      curBlock,
+      draft.ytId ? '' : h('p', { class: 'note' }, 'Cole o link original do vídeo no formulário para o app procurar a miniatura arquivada pelo ID.'),
+      draft.ytId ? secs.wb.el : '', draft.ytId ? secs.yt.el : '',
+      frameSection((art, full) => choose(art, full)),
+      ownImageSection({ text: 'Um print que você guardou, a capa do single ou qualquer imagem. Fica guardada no aparelho e vai junto no backup.', maxW: 1280, maxH: 720, onPick: (art, full) => choose(art, full) }));
+    paintSec('wb'); paintSec('yt');
+    load();
+  };
+  function choose(art, full) {
+    draft.art = art;
+    draft.artFull = full || '';
+    formV.dirty = true;
+    Sheet.back();
+  }
+  function load() {
+    const id = draft.ytId;
+    if (!id) return;
+    if (st.yt.key !== id) {
+      st.yt = { key: id, loading: true };
+      paintSec('yt');
+      loadedThumbs(ytThumbs(id)).then(list => { if (st.yt.key === id) st.yt.data = list; })
+        .finally(() => { if (st.yt.key === id) { st.yt.loading = false; paintSec('yt'); } });
+    }
+    if (st.wb.key !== id) {
+      st.wb = { key: id, loading: true };
+      paintSec('wb');
+      waybackThumbs(id)
+        .then(list => loadedThumbs(list).then(ok => ({ list: ok, exact: true })), () => loadedThumbs(waybackGuesses(id)).then(ok => ({ list: ok, exact: false })))
+        .then(d => { if (st.wb.key === id) st.wb.data = d; }, () => { if (st.wb.key === id) st.wb.data = { list: [], exact: false }; })
+        .finally(() => { if (st.wb.key === id) { st.wb.loading = false; paintSec('wb'); } });
+    }
+  }
+  function card(x) {
+    const cur = !!draft.art && draft.art === x.art;
+    const cv = h('span', { class: 'cover wide' }, h('img', { src: x.thumb, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer' }));
+    if (cur) cv.append(h('span', { class: 'curmark' }, icon('check', 14)));
+    return h('button', { class: 'imgcard' + (cur ? ' current' : ''), type: 'button', 'aria-pressed': String(cur), 'aria-label': [x.src, x.variant, x.w && `${x.w} por ${x.h}`].filter(Boolean).join(', '), onclick: () => choose(x.art, x.full) },
+      cv,
+      h('span', { class: 'imgcard-info' },
+        h('span', { class: 'imgcard-src' }, x.src),
+        h('span', { class: 'imgcard-m' }, [x.variant, x.w && `${x.w} × ${x.h}`].filter(Boolean).join(' · ')),
+        x.captured ? h('span', { class: 'imgcard-m' }, 'capturada em ' + fmtDate(x.captured)) : null));
+  }
+  function paintSec(name) {
+    const sec = secs[name];
+    if (!sec) return;
+    const slot = st[name];
+    const line = (...c) => h('div', { class: 'status-line' }, ...c);
+    let cards = [];
+    const lines = [];
+    if (slot.loading) lines.push(line(...spinnerLine(name === 'wb' ? 'Procurando no Wayback Machine (pode levar alguns segundos)…' : 'Verificando no YouTube…')));
+    else if (name === 'yt') {
+      cards = (slot.data || []).map(card);
+      if (!cards.length) lines.push(line('O YouTube não tem mais a miniatura deste vídeo.'));
+    } else {
+      const d = slot.data || { list: [] };
+      cards = d.list.map(card);
+      if (!cards.length) lines.push(line('Nenhuma miniatura deste vídeo no Wayback Machine.'));
+      else if (!d.exact) lines.push(line('Cópias mais prováveis da miniatura (o navegador não deixou consultar o índice completo do Wayback).'));
+    }
+    sec.status.replaceChildren(...lines);
+    sec.grid.replaceChildren(...cards);
+    sec.count.textContent = cards.length ? fmtN(cards.length) : '';
+  }
+  return v;
+}
+
+/* ---------- Lista da aba Recuperados ---------- */
+function videoRow(v) {
+  const sub = [v.channel, v.uploadDate ? 'enviado em ' + fmtDate(v.uploadDate) : ''].filter(Boolean).join(' · ');
+  const cv = vArt(v);
+  if (v.duration) cv.append(h('span', { class: 'dur' }, v.duration));
+  return h('button', { class: 'row vrow', type: 'button', onclick: () => openVideo(v.id) },
+    cv,
+    h('span', { class: 'row-main' },
+      h('span', { class: 'row-title' }, vTitle(v)),
+      h('span', { class: 'row-sub' }, sub || (v.ytId ? h('span', { class: 'mono' }, v.ytId) : '—')),
+      h('span', { class: 'row-tags' },
+        v.unique ? h('span', { class: 'ltag uniq' }, 'ÚNICO') : null,
+        h('span', { class: 'mtag' }, icon('play', 13), VCAT[v.category]),
+        v.reason !== 'desconhecido' ? h('span', { class: 'mtag', title: 'Motivo provável da remoção' }, VREASON[v.reason][1]) : null,
+        pill(v.status, vStatusLabel(v.status)), dateTag(v, 'date', 'Data da recuperação'))));
+}
+function videoCard(v) {
+  const cv = vArt(v);
+  cv.append(h('span', { class: 'sdot st-' + v.status }));
+  if (v.unique) cv.append(h('span', { class: 'ltag tl uniq' }, 'ÚNICO'));
+  if (v.duration) cv.append(h('span', { class: 'dur' }, v.duration));
+  const sub = [v.channel, v.uploadDate && v.uploadDate.slice(0, 4)].filter(Boolean).join(' · ');
+  return h('button', {
+    class: 'card', type: 'button', onclick: () => openVideo(v.id),
+    'aria-label': [vTitle(v), v.channel, vStatusLabel(v.status), v.date && 'recuperado em ' + fmtDate(v.date), v.unique && 'única cópia conhecida'].filter(Boolean).join(', '),
+  },
+  cv,
+  h('span', { class: 'card-title' }, vTitle(v)),
+  h('span', { class: 'card-foot' }, h('span', { class: 'card-artist' }, sub || '—'), dateTag(v, 'card-date', 'Data da recuperação')));
+}
+
+function renderVideos() {
+  const total = S.videos.length;
+  $('#summary').hidden = total === 0;
+  $('#controls').hidden = total === 0;
+  const q = norm(V.q.trim());
+  const byText = q ? S.videos.filter(v => vhay(v).includes(q)) : S.videos.slice();
+  const hasCat = v => !V.cat || v.category === V.cat;
+  const counts = { fila: 0, andamento: 0, concluido: 0, refazer: 0 };
+  byText.filter(hasCat).forEach(v => { counts[v.status] = (counts[v.status] || 0) + 1; });
+  paintSummary(counts, V, vLegendLabel);
+
+  const forCat = byText.filter(v => !V.status || v.status === V.status);
+  const ccount = {};
+  forCat.forEach(v => { ccount[v.category] = (ccount[v.category] || 0) + 1; });
+  const row = $('#medium-chips');
+  const scroll = row.scrollLeft;
+  row.replaceChildren(
+    h('button', { type: 'button', class: 'chip', 'aria-pressed': String(!V.cat), onclick: () => { V.cat = ''; render(); } }, 'Todos', h('span', { class: 'c' }, fmtN(forCat.length))),
+    ...VCATS.filter(([c]) => ccount[c] || V.cat === c).map(([c, label]) => h('button', {
+      type: 'button', class: 'chip', 'aria-pressed': String(V.cat === c), onclick: () => { V.cat = V.cat === c ? '' : c; render(); },
+    }, label, h('span', { class: 'c' }, fmtN(ccount[c] || 0)))));
+  row.scrollLeft = scroll;
+
+  const list = sortVideos(forCat.filter(hasCat));
+  const box = $('#items');
+  box.className = V.view === 'grid' ? 'grid wide' : 'rows';
+  const frag = document.createDocumentFragment();
+  for (const v of list) frag.append(V.view === 'grid' ? videoCard(v) : videoRow(v));
+  box.replaceChildren(frag);
+  $('#noresults').hidden = !(total > 0 && list.length === 0);
+  const empty = $('#empty');
+  empty.hidden = total !== 0;
+  if (total === 0) renderVideoEmpty(empty);
+}
+
+function renderVideoEmpty(el) {
+  el.replaceChildren(
+    h('h2', null, 'Nenhum vídeo recuperado ainda'),
+    h('p', null, 'Registre cada vídeo apagado que você conseguiu resgatar: os dados do upload, o que tem nele, o motivo provável de ter saído do ar, de onde veio a cópia e onde ela está salva agora.'),
+    h('ol', { class: 'steps' },
+      h('li', null, h('span', null, h('strong', null, 'Cole o link original'), h('br'), 'O app tira o ID, procura a miniatura arquivada e já abre o vídeo no YouTube Video Finder, Wayback e Filmot.')),
+      h('li', null, h('span', null, h('strong', null, 'Preencha o que achou'), h('br'), 'Título, canal e data de upload (o Filmot costuma ter), conteúdo e motivo da remoção.')),
+      h('li', null, h('span', null, h('strong', null, 'Diga de onde veio e onde está'), h('br'), 'O link da cópia no arquivo, a qualidade e onde o arquivo está guardado.'))),
+    h('div', { class: 'btnrow' }, h('button', { class: 'btn btn-primary', type: 'button', onclick: openAdd }, icon('plus', 18), 'Adicionar vídeo')));
+}
+
+/* ---------- Tela: formulário do vídeo ---------- */
+function videoHead(draft, formV) {
+  const el = h('div', { class: 'vhead' });
+  el.update = () => {
+    const open = () => Sheet.push(vThumbView(draft, formV));
+    const sub = [draft.channel, draft.uploadDate ? 'enviado em ' + fmtDate(draft.uploadDate) : ''].filter(Boolean).join(' · ');
+    const btn = h('button', { class: 'art-btn', type: 'button', 'aria-label': 'Trocar a miniatura', onclick: open }, vArt(draft, true), h('span', { class: 'hero-edit' }, icon('pencil', 14)));
+    if (draft.duration) btn.append(h('span', { class: 'dur' }, draft.duration));
+    el.replaceChildren(btn,
+      h('div', { class: 'vhead-info' },
+        h('p', { class: 'album-t' }, vTitle(draft)),
+        sub ? h('p', { class: 'album-a' }, sub) : null,
+        draft.unique || draft.reason !== 'desconhecido' ? h('div', { class: 'owned-line' },
+          draft.unique ? h('span', { class: 'ltag uniq' }, 'ÚNICO NA INTERNET') : null,
+          draft.reason !== 'desconhecido' ? h('span', { class: 'mtag' }, VREASON[draft.reason][1]) : null) : null,
+        draft._thumbBusy ? h('p', { class: 'status-line' }, ...spinnerLine('Procurando a miniatura arquivada…'))
+          : draft._thumbMiss ? h('p', { class: 'fine' }, 'Não achei a miniatura arquivada. Dá para tirar um quadro do vídeo salvo.') : null,
+        h('button', { class: 'linkbtn album-link', type: 'button', onclick: open }, icon('image', 16), draft.art ? 'Trocar miniatura' : 'Escolher miniatura')));
+  };
+  el.update();
+  return el;
+}
+
+function textArea(obj, { id, label, key, placeholder, rows = 4, onInput }) {
+  const ta = h('textarea', { class: 'inp', id, rows: String(rows), placeholder }, obj[key] || '');
+  ta.addEventListener('input', () => { obj[key] = ta.value; onInput && onInput(); });
+  return h('div', { class: 'field' }, h('label', { class: 'lbl', for: id }, label), ta);
+}
+
+function videoFormView(draft, mode) {
+  const v = { title: mode === 'edit' ? 'Editar vídeo' : 'Novo vídeo recuperado', dirty: false };
+  const parts = {};
+  const touch = () => { v.dirty = true; };
+  v.refresh = () => { if (Sheet.top === v && parts.head) parts.head.update(); };
+
+  v.render = (body, foot) => {
+    parts.head = videoHead(draft, v);
+    const headUpdate = () => { parts.head.update(); touch(); };
+
+    // link original → ID, atalhos para os arquivos, aviso de repetido, miniatura automática
+    const urlIn = h('input', { class: 'inp', id: 'v-url', type: 'url', inputmode: 'url', value: draft.url || '', placeholder: 'https://www.youtube.com/watch?v=…', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
+    const urlErr = h('p', { class: 'err', hidden: true }, 'Cole o link original ou informe o título.');
+    const linkInfo = h('div', { class: 'stack' });
+    const paintLinks = () => {
+      const id = draft.ytId;
+      const dup = id ? S.videos.filter(x => x.ytId === id && x.id !== draft.id) : [];
+      linkInfo.replaceChildren(
+        id ? h('p', { class: 'msg' }, 'ID do vídeo: ', h('span', { class: 'mono' }, id))
+          : draft.url ? h('p', { class: 'fine' }, 'Não achei um ID do YouTube nesse link. Tudo bem se o vídeo for de outro site.') : '',
+        dup.length ? h('div', { class: 'note' }, h('strong', null, 'Este vídeo já está no acervo.'),
+          h('button', { class: 'linkbtn', type: 'button', onclick: () => { if (!v.dirty || confirm('Descartar o que você preencheu?')) Sheet.show(videoFormView(clone(dup[0]), 'edit')); } }, 'Abrir o registro')) : '',
+        id ? h('div', { class: 'btnrow vlinks' }, ...archiveLinks(id).map(([name, href]) => h('a', { class: 'btn btn-sm', href, target: '_blank', rel: 'noopener' }, name, icon('external', 14)))) : '');
+    };
+    urlIn.addEventListener('input', () => {
+      draft.url = urlIn.value.trim();
+      urlErr.hidden = true;
+      const id = ytIdFrom(draft.url);
+      const changed = id !== draft.ytId;
+      draft.ytId = id;
+      touch();
+      if (changed) { draft._thumbMiss = false; paintLinks(); parts.head.update(); if (id && !draft.art) autoThumb(draft, v); }
+    });
+    paintLinks();
+
+    const up = dateField(draft, 'uploadDate', { id: 'v-up', label: 'Data de upload', today: false, onUserChange: headUpdate });
+    const catField = h('div', { class: 'field', role: 'radiogroup', 'aria-labelledby': 'lbl-vcat' },
+      h('div', { class: 'lbl', id: 'lbl-vcat' }, 'Tipo de vídeo'),
+      h('div', { class: 'choices' }, VCATS.map(([c, label]) => choice('vcat', c, label, draft.category === c, val => { draft.category = val; touch(); }))));
+    const uniqChk = h('input', { type: 'checkbox', id: 'v-unique', checked: draft.unique || null });
+    uniqChk.addEventListener('change', () => { draft.unique = uniqChk.checked; headUpdate(); });
+
+    // motivo da remoção: a mensagem típica do YouTube vira sugestão
+    const reasonNote = sugField(draft, {
+      id: 'v-rnote', label: 'Mensagem do YouTube ou detalhes', key: 'reasonNote', onInput: touch,
+      placeholder: () => (VREASON[draft.reason] || [])[2] || 'O que aparecia no lugar do vídeo, ou o que você sabe da remoção',
+      sugs: () => uniq([(VREASON[draft.reason] || [])[2], ...vhist('reasonNote')]).slice(0, 4),
+    });
+    const reasonField = h('div', { class: 'field', role: 'radiogroup', 'aria-labelledby': 'lbl-vreason' },
+      h('div', { class: 'lbl', id: 'lbl-vreason' }, 'Motivo provável'),
+      h('div', { class: 'choices' }, VREASONS.map(([c, label]) => choice('vreason', c, label, draft.reason === c, val => { draft.reason = val; reasonNote.update(); headUpdate(); }))));
+
+    // "Parcial" já é uma recuperação (com data); "Procurando" e "Perdido" ainda não
+    const sd = statusDateBlock(draft, { prefix: 'v', isNew: mode === 'new', touch, labels: VSTATUS, dateLabel: 'Data da recuperação', needMsg: 'Informe quando você recuperou (ou toque em Hoje).', clearOn: ['fila', 'refazer'] });
+
+    // de onde veio a cópia: link do arquivo preenche a fonte e a data da captura
+    const cap = dateField(draft, 'captureDate', { id: 'v-cap', label: 'Data da captura no arquivo', today: false, onUserChange: touch });
+    const srcInputs = [];
+    const srcField = h('div', { class: 'field', role: 'radiogroup', 'aria-labelledby': 'lbl-vsrc' },
+      h('div', { class: 'lbl', id: 'lbl-vsrc' }, 'Recuperado de'),
+      h('div', { class: 'choices' }, VSOURCES.map(([c, label]) => {
+        const ch = choice('vsrc', c, label, draft.source === c, val => { draft.source = val; touch(); });
+        srcInputs.push(ch.querySelector('input'));
+        return ch;
+      })));
+    const srcUrl = h('input', { class: 'inp', id: 'v-srcurl', type: 'url', inputmode: 'url', value: draft.sourceUrl || '', placeholder: 'https://web.archive.org/web/2011…', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
+    srcUrl.addEventListener('input', () => {
+      draft.sourceUrl = srcUrl.value.trim();
+      touch();
+      const src = sourceFromUrl(draft.sourceUrl);
+      if (src && !draft.source) { draft.source = src; srcInputs.forEach(i => { i.checked = i.value === src; }); }
+      const d = waybackDate(draft.sourceUrl);
+      if (d && !draft.captureDate) cap.set(d);
+      if (!draft.ytId) { const id = ytIdFrom(draft.sourceUrl); if (id) { draft.ytId = id; paintLinks(); parts.head.update(); if (!draft.art) autoThumb(draft, v); } }
+    });
+    const quality = sugField(draft, { id: 'v-quality', label: 'Qualidade da cópia', key: 'quality', onInput: touch, placeholder: 'FLV 320×240', sugs: () => uniq([...vhist('quality'), ...VQUALITY]) });
+    const loc = sugField(draft, { id: 'v-loc', label: 'Onde está salvo', key: 'location', onInput: touch, placeholder: 'HD externo, NAS, pasta…', sugs: () => uniq([...vhist('location'), ...rhist('location'), ...history('location')]) });
+
+    body.append(parts.head,
+      section('Vídeo original', 'play',
+        h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'v-url' }, 'Link original'), urlIn, urlErr),
+        linkInfo,
+        textField(draft, { id: 'v-title', label: 'Título original', key: 'title', onInput: headUpdate, placeholder: 'Como estava no YouTube' }),
+        textField(draft, { id: 'v-channel', label: 'Canal', key: 'channel', onInput: headUpdate, placeholder: 'Quem enviou' }),
+        up.el,
+        h('div', { class: 'two' },
+          textField(draft, { id: 'v-dur', label: 'Duração', key: 'duration', onInput: headUpdate, placeholder: '3:45', extra: { inputmode: 'numeric' } }),
+          textField(draft, { id: 'v-views', label: 'Visualizações', key: 'views', onInput: touch, placeholder: '12.345' })),
+        catField,
+        h('label', { class: 'check', for: 'v-unique' }, uniqChk, 'Única cópia conhecida na internet')),
+      sd.status, sd.date.el,
+      section('Por que saiu do ar', 'info', reasonField, reasonNote.el),
+      section('Conteúdo', 'pencil',
+        textArea(draft, { id: 'v-content', label: 'O que tem no vídeo', key: 'content', onInput: touch, rows: 5, placeholder: 'Videoclipe, apresentação na TV, de que ano é, quem aparece, por que é raro…' }),
+        textArea(draft, { id: 'v-desc', label: 'Descrição original', key: 'description', onInput: touch, rows: 4, placeholder: 'O texto que o autor escreveu no YouTube (o Filmot costuma guardar)' })),
+      section('Recuperação', 'download',
+        srcField,
+        h('div', { class: 'field' }, h('label', { class: 'lbl', for: 'v-srcurl' }, 'Link da cópia arquivada'), srcUrl,
+          h('p', { class: 'fine' }, 'Com um link do Wayback, a data da captura se preenche sozinha.')),
+        cap.el, quality.el),
+      section('Onde está salvo', 'box',
+        loc.el,
+        h('div', { class: 'two' },
+          textField(draft, { id: 'v-file', label: 'Nome do arquivo', key: 'fileName', onInput: touch, placeholder: 'video.mp4', extra: { autocapitalize: 'off', spellcheck: 'false' } }),
+          textField(draft, { id: 'v-size', label: 'Tamanho', key: 'size', onInput: touch, placeholder: '18 MB' })),
+        textField(draft, { id: 'v-reup', label: 'Republicado em (link)', key: 'reupload', type: 'url', onInput: touch, placeholder: 'https://archive.org/details/…', extra: { inputmode: 'url', autocapitalize: 'off', spellcheck: 'false' } })),
+      textArea(draft, { id: 'v-notes', label: 'Notas', key: 'notes', onInput: touch, rows: 3, placeholder: 'Como achou, quem ajudou, o que falta recuperar…' }));
+    if (mode === 'edit') {
+      body.append(h('div', { class: 'danger' },
+        h('button', { class: 'btn', type: 'button', onclick: async () => { toast((await copyText(videoFicha(normalizeVideo(draft)))) ? 'Ficha copiada. É só colar no post.' : 'Não deu para copiar neste navegador.'); } }, icon('clip', 18), 'Copiar ficha'),
+        h('button', { class: 'btn btn-danger', type: 'button', onclick: () => removeVideo(draft.id) }, icon('trash', 18), 'Excluir')));
+    }
+
+    const saveBtn = h('button', {
+      class: 'btn btn-primary btn-block', type: 'button',
+      onclick: async () => {
+        if (!String(draft.title || '').trim() && !draft.url) { urlErr.hidden = false; urlIn.focus(); return; }
+        if (!up.valid()) { up.error(BAD_DATE); up.focus(); return; }
+        if (!cap.valid()) { cap.error(BAD_DATE); cap.focus(); return; }
+        if (!sd.validate()) return;
+        saveBtn.disabled = true;
+        try {
+          await saveVideo(draft);
+          Sheet.close();
+          toast(mode === 'edit' ? 'Alterações salvas' : 'Vídeo salvo no acervo');
+        } catch (e) {
+          saveBtn.disabled = false;
+          toast('Não deu para salvar: ' + ((e && e.message) || 'erro no armazenamento do navegador'));
+        }
+      },
+    }, mode === 'edit' ? 'Salvar alterações' : 'Salvar no acervo');
+    foot.append(saveBtn);
+  };
+  return v;
+}
+
+async function saveVideo(draft) {
+  const now = new Date().toISOString();
+  const r = normalizeVideo({ ...draft, id: draft.id || uid(), createdAt: draft.createdAt || now, updatedAt: now });
+  await DB.put('videos', r);
+  const i = S.videos.findIndex(x => x.id === r.id);
+  if (i >= 0) S.videos[i] = r; else S.videos.push(r);
+  draft.id = r.id;
+  draft.createdAt = r.createdAt;
+  render();
+  ensurePersist();
+  return r;
+}
+async function removeVideo(id) {
+  const r = S.videos.find(x => x.id === id);
+  if (!r) { Sheet.close(); return; }
+  await DB.del('videos', id);
+  S.videos = S.videos.filter(x => x.id !== id);
+  render();
+  Sheet.close();
+  toast('Vídeo excluído', {
+    action: 'Desfazer', duration: 7000,
+    onAction: async () => { await DB.put('videos', r); S.videos.push(r); render(); toast('Vídeo restaurado'); },
+  });
+}
+function openVideo(id) {
+  const r = S.videos.find(x => x.id === id);
+  if (r) Sheet.show(videoFormView(clone(r), 'edit'));
+}
+
+/* Texto pronto para postar (comunidades de mídia perdida, por exemplo). Não inclui onde o arquivo está guardado. */
+function videoFicha(r) {
+  const L = [vTitle(r)];
+  const up = [r.channel && 'Canal: ' + r.channel, r.uploadDate && 'enviado em ' + fmtDate(r.uploadDate), r.duration && 'duração ' + r.duration, r.views && r.views + ' visualizações'].filter(Boolean).join(' · ');
+  if (up) L.push(up);
+  if (r.url) L.push('Link original: ' + r.url);
+  L.push(`Status: ${vStatusLabel(r.status)}${r.date ? ' em ' + fmtDate(r.date) : ''}${r.unique ? ' · única cópia conhecida' : ''}`);
+  L.push('Motivo provável da remoção: ' + VREASON[r.reason][1] + (r.reasonNote ? ` (“${r.reasonNote}”)` : ''));
+  if (r.source || r.sourceUrl || r.quality) {
+    L.push('Recuperado de: ' + [VSOURCE[r.source], r.captureDate && 'captura de ' + fmtDate(r.captureDate), r.quality].filter(Boolean).join(' · ') + (r.sourceUrl ? ' — ' + r.sourceUrl : ''));
+  }
+  if (r.content.trim()) L.push('', 'Conteúdo', r.content.trim());
+  if (r.description.trim()) L.push('', 'Descrição original', r.description.trim());
+  if (r.reupload) L.push('', 'Republicado em: ' + r.reupload);
+  return L.join('\n');
+}
+
+function exportVideoCSV() {
+  const cols = [
+    ['Título original', r => r.title], ['Canal', r => r.channel], ['Data de upload', r => fmtDate(r.uploadDate)], ['Duração', r => r.duration],
+    ['Visualizações', r => r.views], ['Tipo', r => VCAT[r.category]], ['Única cópia', r => (r.unique ? 'sim' : '')],
+    ['Status', r => vStatusLabel(r.status)], ['Data da recuperação', r => fmtDate(r.date)],
+    ['Motivo provável', r => VREASON[r.reason][1]], ['Mensagem / detalhes', r => r.reasonNote],
+    ['Recuperado de', r => VSOURCE[r.source] || ''], ['Link da cópia', r => r.sourceUrl], ['Data da captura', r => fmtDate(r.captureDate)], ['Qualidade', r => r.quality],
+    ['Conteúdo', r => r.content], ['Descrição original', r => r.description],
+    ['Onde está salvo', r => r.location], ['Nome do arquivo', r => r.fileName], ['Tamanho', r => r.size], ['Republicado em', r => r.reupload],
+    ['Link original', r => r.url], ['ID do YouTube', r => r.ytId], ['Notas', r => r.notes],
+    ['Miniatura', r => r.artFull || (r.art && !r.art.startsWith('data:') ? r.art : r.art ? 'enviada do aparelho' : '')],
+    ['Criado em', r => r.createdAt], ['Atualizado em', r => r.updatedAt],
+  ];
+  const rows = S.videos.slice().sort((a, b) => collator.compare(vTitle(a), vTitle(b)));
+  saveFile(csvBlob(cols, rows), `acervo-videos-${todayISO()}.csv`).then(ok => { if (ok) toast('Planilha dos vídeos exportada'); });
+}
+
 /* ================= Tela: ajustes, backup ================= */
 function section(title, ic, ...children) {
   return h('section', { class: 'sect' }, h('h3', null, icon(ic, 18), title), ...children);
@@ -3786,9 +4476,10 @@ function settingsView() {
       h('p', { class: 'fine' }, 'Peça a chave grátis em ', h('a', { href: 'https://www.omdbapi.com/apikey.aspx', target: '_blank', rel: 'noopener' }, 'omdbapi.com'),
         ' e clique no link de ativação que chega por e-mail.')));
 
-    const n = S.items.length + S.remuxes.length;
-    const ni = S.items.length, nr = S.remuxes.length;
-    const what = [ni ? `${fmtN(ni)} ${plural(ni, 'digitalização', 'digitalizações')}` : '', nr ? `${fmtN(nr)} ${plural(nr, 'remux', 'remuxes')}` : ''].filter(Boolean).join(' e ');
+    const n = S.items.length + S.remuxes.length + S.videos.length;
+    const ni = S.items.length, nr = S.remuxes.length, nv = S.videos.length;
+    const parts = [ni ? `${fmtN(ni)} ${plural(ni, 'digitalização', 'digitalizações')}` : '', nr ? `${fmtN(nr)} ${plural(nr, 'remux', 'remuxes')}` : '', nv ? `${fmtN(nv)} ${plural(nv, 'vídeo recuperado', 'vídeos recuperados')}` : ''].filter(Boolean);
+    const what = parts.length > 1 ? parts.slice(0, -1).join(', ') + ' e ' + parts[parts.length - 1] : parts.join('');
     const last = store.get('last_export');
     // sem "accept": no iPhone ele às vezes deixa arquivos .json cinza no seletor; o conteúdo é validado na importação
     const fileIn = h('input', { type: 'file', hidden: true, id: 'import-file' });
@@ -3805,9 +4496,10 @@ function settingsView() {
         h('button', { class: 'btn', type: 'button', onclick: () => fileIn.click() }, icon('upload', 18), 'Importar backup')),
       h('div', { class: 'btnrow' },
         h('button', { class: 'btn', type: 'button', disabled: !ni || null, onclick: exportCSV }, 'Planilha das digitalizações (CSV)'),
-        h('button', { class: 'btn', type: 'button', disabled: !nr || null, onclick: exportRemuxCSV }, 'Planilha dos remuxes (CSV)')),
+        h('button', { class: 'btn', type: 'button', disabled: !nr || null, onclick: exportRemuxCSV }, 'Planilha dos remuxes (CSV)'),
+        h('button', { class: 'btn', type: 'button', disabled: !nv || null, onclick: exportVideoCSV }, 'Planilha dos vídeos (CSV)')),
       fileIn,
-      h('p', { class: 'fine' }, 'O backup leva as duas abas, inclusive as capas enviadas do aparelho. A importação junta os itens: o que não existe aqui é adicionado, e o que existe nos dois lados fica com a versão editada por último.')));
+      h('p', { class: 'fine' }, 'O backup leva as três abas, inclusive as capas e miniaturas enviadas do aparelho. A importação junta os itens: o que não existe aqui é adicionado, e o que existe nos dois lados fica com a versão editada por último.')));
 
     if (!isStandalone()) {
       body.append(section('Usar como app', 'phone',
@@ -3856,7 +4548,8 @@ function byCreated(a, b) { return (a.createdAt || '').localeCompare(b.createdAt 
 async function exportJSON() {
   const items = S.items.slice().sort(byCreated);
   const remuxes = S.remuxes.slice().sort(byCreated);
-  const data = { app: 'acervo', schema: 2, version: VERSION, exportedAt: new Date().toISOString(), count: items.length, remuxCount: remuxes.length, items, remuxes };
+  const videos = S.videos.slice().sort(byCreated);
+  const data = { app: 'acervo', schema: 3, version: VERSION, exportedAt: new Date().toISOString(), count: items.length, remuxCount: remuxes.length, videoCount: videos.length, items, remuxes, videos };
   const ok = await saveFile(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `acervo-backup-${todayISO()}.json`);
   if (ok) { store.set('last_export', new Date().toISOString()); toast('Backup exportado'); renderNudge(); }
 }
@@ -3908,7 +4601,8 @@ async function importFile(file) {
   try { data = JSON.parse(await file.text()); } catch (e) { toast('Esse arquivo não é um backup do Acervo (não consegui ler o JSON).'); return; }
   const arr = Array.isArray(data) ? data : data && Array.isArray(data.items) ? data.items : null;
   const rarr = data && !Array.isArray(data) && Array.isArray(data.remuxes) ? data.remuxes : null;
-  if (!arr && !rarr) { toast('Esse arquivo não tem itens do Acervo.'); return; }
+  const varr = data && !Array.isArray(data) && Array.isArray(data.videos) ? data.videos : null;
+  if (!arr && !rarr && !varr) { toast('Esse arquivo não tem itens do Acervo.'); return; }
   let added = 0, updated = 0, kept = 0;
   const merge = (current, list, normalize) => {
     const map = new Map(current.map(i => [i.id, i]));
@@ -3916,7 +4610,7 @@ async function importFile(file) {
     for (const raw of list || []) {
       if (!raw || typeof raw !== 'object') continue;
       const it = normalize(raw);
-      if (!it.title) continue;
+      if (!(it.title || it.ytId || it.url)) continue;
       const cur = map.get(it.id);
       if (!cur) { added++; toPut.push(it); map.set(it.id, it); }
       else if ((it.updatedAt || '') > (cur.updatedAt || '')) { updated++; toPut.push(it); map.set(it.id, it); }
@@ -3926,12 +4620,15 @@ async function importFile(file) {
   };
   const mi = merge(S.items, arr, normalizeItem);
   const mr = merge(S.remuxes, rarr, normalizeRemux);
+  const mv = merge(S.videos, varr, normalizeVideo);
   try {
     await DB.putMany('items', mi.toPut);
     await DB.putMany('remuxes', mr.toPut);
+    await DB.putMany('videos', mv.toPut);
   } catch (e) { toast('Não deu para gravar a importação neste navegador.'); return; }
   S.items = mi.all;
   S.remuxes = mr.all;
+  S.videos = mv.all;
   render();
   backfillReleaseDates();
   ensurePersist();
@@ -3939,7 +4636,7 @@ async function importFile(file) {
 }
 
 /* ================= Início ================= */
-function openAdd() { Sheet.show(S.tab === 'remux' ? filmSearchView('new') : searchView()); }
+function openAdd() { Sheet.show(S.tab === 'remux' ? filmSearchView('new') : S.tab === 'video' ? videoFormView(blankVideo(), 'new') : searchView()); }
 function openSettings() { Sheet.show(settingsView()); }
 
 const SORTS = {
@@ -3953,30 +4650,43 @@ const SORTS = {
     ['date_desc', 'Digitalização: mais recentes'], ['date_asc', 'Digitalização: mais antigas'],
     ['title', 'Título (A–Z)'], ['recent', 'Atualizados'], ['added', 'Adicionados'],
   ],
+  video: [
+    ['date_desc', 'Recuperação: mais recentes'], ['date_asc', 'Recuperação: mais antigas'],
+    ['upload_asc', 'Upload: mais antigos'], ['upload_desc', 'Upload: mais novos'],
+    ['title', 'Título (A–Z)'], ['channel', 'Canal (A–Z)'], ['recent', 'Atualizados'], ['added', 'Adicionados'],
+  ],
+};
+const TAB_TEXT = {
+  digi: { q: 'Filtrar por título, artista, selo, notas…', chips: 'Filtrar por mídia', fab: ' Adicionar', list: 'Digitalizações' },
+  remux: { q: 'Filtrar por título, idioma, dublagem, notas…', chips: 'Filtrar por idioma do áudio', fab: ' Adicionar remux', list: 'Remuxes' },
+  video: { q: 'Filtrar por título, canal, conteúdo, motivo…', chips: 'Filtrar por tipo de vídeo', fab: ' Adicionar vídeo', list: 'Vídeos recuperados' },
 };
 function paintControls() {
-  const remux = S.tab === 'remux';
+  const T = TAB_TEXT[S.tab];
   const Fs = F();
   const fq = $('#filter-q');
   fq.value = Fs.q;
-  fq.placeholder = remux ? 'Filtrar por título, idioma, dublagem, notas…' : 'Filtrar por título, artista, selo, notas…';
-  $('#medium-chips').setAttribute('aria-label', remux ? 'Filtrar por idioma do áudio' : 'Filtrar por mídia');
+  fq.placeholder = T.q;
+  $('#medium-chips').setAttribute('aria-label', T.chips);
   const sortSel = $('#sort');
-  const opts = SORTS[remux ? 'remux' : 'digi'];
+  const opts = SORTS[S.tab];
   sortSel.replaceChildren(...opts.map(([v, l]) => h('option', { value: v }, l)));
   Fs.sort = SORT_ALIASES[Fs.sort] || Fs.sort;
   if (!opts.some(o => o[0] === Fs.sort)) Fs.sort = 'recent';
   sortSel.value = Fs.sort;
   $('#view-list').setAttribute('aria-pressed', String(Fs.view === 'list'));
   $('#view-grid').setAttribute('aria-pressed', String(Fs.view === 'grid'));
-  $('#fab').lastChild.textContent = remux ? ' Adicionar remux' : ' Adicionar';
-  $('#list-section').setAttribute('aria-label', remux ? 'Remuxes' : 'Digitalizações');
-  for (const [id, on] of [['#tab-digi', !remux], ['#tab-remux', remux]]) {
-    $(id).setAttribute('aria-selected', String(on));
-    $(id).tabIndex = on ? 0 : -1;
+  $('#fab').lastChild.textContent = T.fab;
+  $('#list-section').setAttribute('aria-label', T.list);
+  for (const t of TABS) {
+    const on = S.tab === t;
+    $('#tab-' + t).setAttribute('aria-selected', String(on));
+    $('#tab-' + t).tabIndex = on ? 0 : -1;
   }
-  $('#main-panel').setAttribute('aria-labelledby', remux ? 'tab-remux' : 'tab-digi');
+  $('#main-panel').setAttribute('aria-labelledby', 'tab-' + S.tab);
 }
+const SORT_KEY = { digi: 'sort', remux: 'rsort', video: 'vsort' };
+const VIEW_KEY = { digi: 'view', remux: 'rview', video: 'vview' };
 function setTab(tab) {
   if (S.tab === tab) return;
   S.tab = tab;
@@ -3988,7 +4698,7 @@ function setTab(tab) {
 function setView(view) {
   const Fs = F();
   Fs.view = view;
-  store.set(S.tab === 'remux' ? 'rview' : 'view', view);
+  store.set(VIEW_KEY[S.tab], view);
   $('#view-list').setAttribute('aria-pressed', String(view === 'list'));
   $('#view-grid').setAttribute('aria-pressed', String(view === 'grid'));
   render();
@@ -3999,25 +4709,27 @@ async function init() {
   $('#fab').addEventListener('click', openAdd);
   $('#tab-digi').addEventListener('click', () => setTab('digi'));
   $('#tab-remux').addEventListener('click', () => setTab('remux'));
+  $('#tab-video').addEventListener('click', () => setTab('video'));
   $('.tabs').addEventListener('keydown', e => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     e.preventDefault();
-    setTab(S.tab === 'remux' ? 'digi' : 'remux');
-    $(S.tab === 'remux' ? '#tab-remux' : '#tab-digi').focus();
+    const i = TABS.indexOf(S.tab);
+    setTab(TABS[(i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length]);
+    $('#tab-' + S.tab).focus();
   });
   const fq = $('#filter-q');
   fq.addEventListener('input', debounce(() => { F().q = fq.value; render(); }, 120));
   const sortSel = $('#sort');
   sortSel.addEventListener('change', () => {
     F().sort = sortSel.value;
-    store.set(S.tab === 'remux' ? 'rsort' : 'sort', sortSel.value);
+    store.set(SORT_KEY[S.tab], sortSel.value);
     render();
   });
   $('#view-list').addEventListener('click', () => setView('list'));
   $('#view-grid').addEventListener('click', () => setView('grid'));
   $('#clear-filters').addEventListener('click', () => {
     fq.value = '';
-    if (S.tab === 'remux') { R.q = ''; R.lang = ''; R.status = ''; } else { S.q = ''; S.medium = ''; S.status = ''; }
+    if (S.tab === 'remux') { R.q = ''; R.lang = ''; R.status = ''; } else if (S.tab === 'video') { V.q = ''; V.cat = ''; V.status = ''; } else { S.q = ''; S.medium = ''; S.status = ''; }
     render();
   });
   $('#sheet-close').addEventListener('click', () => Sheet.requestClose());
@@ -4036,6 +4748,11 @@ async function init() {
     S.remuxes = (await DB.all('remuxes')).map(normalizeRemux);
   } catch (e) {
     S.remuxes = [];
+  }
+  try {
+    S.videos = (await DB.all('videos')).map(normalizeVideo);
+  } catch (e) {
+    S.videos = [];
   }
   render();
   backfillReleaseDates();

@@ -1,6 +1,6 @@
 # Acervo
 
-Tracker pessoal das suas digitalizações de LPs, CDs, DVDs, fitas e afins, com busca no Discogs, e dos seus BDRemuxes (aba **Remuxes**), com capas do TMDb no estilo do Jellyfin. Roda no navegador, instala na tela inicial do iPhone e abre sem internet para consultar o acervo.
+Tracker pessoal das suas digitalizações de LPs, CDs, DVDs, fitas e afins, com busca no Discogs, dos seus BDRemuxes (aba **Remuxes**), com capas do TMDb no estilo do Jellyfin, e dos vídeos apagados que você recuperou (aba **Recuperados**). Roda no navegador, instala na tela inicial do iPhone e abre sem internet para consultar o acervo.
 
 ## 1. Publicar no GitHub Pages (uma vez, no computador)
 
@@ -56,15 +56,29 @@ Para registrar os BDRemuxes que você montou (por exemplo, juntando uma dublagem
 
 As capas enviadas do aparelho ficam guardadas nele e vão junto no backup. As do TMDb e do OMDb são carregadas da internet.
 
+## Aba Recuperados
+
+Para registrar os vídeos apagados do YouTube que você conseguiu resgatar (com o [YouTube Video Finder](https://findyoutubevideo.thetechrobo.ca), o Wayback Machine, o GhostArchive etc.).
+
+- **Link original**: cole o link do vídeo (pode ter playlist, `youtu.be` ou só o ID). O app tira o ID, avisa se o vídeo já está no acervo e mostra atalhos que abrem o vídeo direto no YouTube Video Finder, no Wayback Machine, no Filmot e no GhostArchive.
+- **Miniatura**: o app procura sozinho a miniatura arquivada no Wayback (a de melhor qualidade) e ignora a imagem cinza que o YouTube põe no lugar de vídeos apagados. Na tela de miniatura dá para escolher outra cópia arquivada, **tirar um quadro do próprio vídeo recuperado** (abra o arquivo; FLV precisa ser convertido para MP4 antes) ou enviar uma imagem sua.
+- **Dados do upload**: título, canal, data de upload, duração, visualizações e tipo de vídeo (videoclipe, programa de TV…). Marque *Única cópia conhecida* quando for o caso: o cartão ganha o selo **ÚNICO**.
+- **Por que saiu do ar**: direitos autorais, conta encerrada, removido pelo autor, regras do YouTube, privado ou não sei, com a mensagem que o YouTube mostrava.
+- **Conteúdo**: o que tem no vídeo e a descrição original (o Filmot costuma guardar).
+- **Status**: recuperado, parcial (só metadados ou um trecho), procurando ou perdido. *Recuperado* precisa da data da recuperação.
+- **Recuperação**: de onde veio a cópia, o link dela (com um link do Wayback, a data da captura se preenche sozinha) e a qualidade.
+- **Onde está salvo**: pasta ou HD, nome e tamanho do arquivo e o link onde você republicou.
+- **Copiar ficha**: gera um texto para postar, sem dizer onde o arquivo está guardado.
+
 ## Backup e outros aparelhos
 
 Cada aparelho guarda os próprios dados. Em **Ajustes → Backup**:
 
 - **Exportar backup** gera um arquivo `.json` com tudo. No iPhone, salve em Arquivos ou no iCloud Drive.
 - **Importar backup** junta esse arquivo ao acervo do aparelho: itens novos entram e, quando o mesmo item existe nos dois lados, fica a versão editada por último. É assim que se leva o acervo do iPhone para o computador e vice-versa.
-- **Planilha das digitalizações / dos remuxes (CSV)** abre no Excel ou no Google Planilhas.
+- **Planilha das digitalizações / dos remuxes / dos vídeos (CSV)** abre no Excel ou no Google Planilhas.
 
-O backup inclui as duas abas. Backups feitos antes da aba Remuxes continuam importando normalmente.
+O backup inclui as três abas, com as capas e miniaturas enviadas do aparelho. Backups feitos antes da aba Remuxes continuam importando normalmente.
 
 ## Atualizar o app
 
